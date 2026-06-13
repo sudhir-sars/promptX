@@ -8,7 +8,8 @@ import { Doc } from "../_generated/dataModel";
 import { ActionCtx, internalAction } from "../_generated/server";
 import { internalError, invariant } from "../lib/errors";
 import { customAlphabet } from "nanoid";
-import { ApiKeyKVKey, ApiKeyRecord } from "../../../../packages/shared/src";
+import { apiKeysKvKey } from "../../../../packages/shared/src/utils";
+import { ApiKeyRecord } from "../../../../packages/shared/src";
 
 const generatePublicId = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 10);
 
@@ -86,7 +87,7 @@ export const syncUserKeysToKV = internalAction({
         const accountId = process.env.CLOUDFLARE_ACCOUNT_ID!;
         const namespaceId = process.env.PROMPTX_API_KEYS_KV!;
         const token = process.env.CLOUDFLARE_API_TOKEN!;
-        const key: ApiKeyKVKey = `team:${teamId}:apikeys`;
+        const key = apiKeysKvKey(teamId);
 
         const res = await fetch(
             `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${namespaceId}/values/${key}`,

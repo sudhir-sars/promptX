@@ -2,7 +2,8 @@ import { Doc } from "../_generated/dataModel";
 import { CreateDeployConfig } from "../types";
 import { invariant } from "./errors";
 import { OwnershipCtx } from "./permissions";
-import { KVPromptConfig, PromptKVKey, DeploymentEnv } from "../../../../packages/shared/src";
+import { KVPromptConfig, DeploymentEnv } from "../../../../packages/shared/src";
+import { promptKvKey } from "../../../../packages/shared/src/utils";
 
 export async function validateAndPrepareDeploymentConfig(
     ctx: OwnershipCtx,
@@ -72,7 +73,7 @@ export async function pushToCFKV(teamId: string, payload: KVPromptConfig) {
 
     const slug = payload.slug;
 
-    const key: PromptKVKey = `prompt:${teamId}:${slug}`;
+    const key = promptKvKey(teamId, slug);
 
     const response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${namespaceId}/values/${encodeURIComponent(key)}`,
@@ -94,7 +95,8 @@ export async function deleteFromCFKV(slug: string, teamId: string) {
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID!;
     const namespaceId = process.env.PROMPTX_PROMPTS_KV!;
     const token = process.env.CLOUDFLARE_API_TOKEN!;
-    const key: PromptKVKey = `prompt:${teamId}:${slug}`;
+
+    const key = promptKvKey(teamId, slug);
 
     const response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${namespaceId}/values/${encodeURIComponent(key)}`,
