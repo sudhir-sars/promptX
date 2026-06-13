@@ -1,6 +1,5 @@
+export type { GetPromptResponse, RoutingInfo } from "@promptx/shared";
 export { PromptXClient } from "./client";
-export { PromptxError, PromptFetchError } from "./zlib/error";
+export { PromptFetchError, PromptxError } from "./zlib/error";
 export { isPrompt } from "./zlib/prompt";
-
-export type { Prompt, XevosConfig, DeploymentEnv } from "./ztypes";
-export type { RoutingInfo, GetPromptResponse } from "@promptx/shared";
+export type { DeploymentEnv, Prompt, PromptXConfig } from "./ztypes";

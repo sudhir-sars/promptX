@@ -1,75 +1,73 @@
 import { v } from "convex/values";
 
 import { internalMutation } from "./_generated/server";
-
-import { notFound } from "./lib/errors";
-import { cascadeDeleteUser } from "./lib/cascade";
 import { authedQuery } from "./lib/auth";
+import { cascadeDeleteUser } from "./lib/cascade";
 import { createDefaultTeam } from "./lib/defaults";
-import { AuthedCtx } from "./types";
+import { notFound } from "./lib/errors";
 
 export const upsertUser = internalMutation({
-    args: {
-        clerkId: v.string(),
-        email: v.string(),
-        name: v.string(),
-        avatar: v.string(),
-    },
+  args: {
+    clerkId: v.string(),
+    email: v.string(),
+    name: v.string(),
+    avatar: v.string(),
+  },
 
-    handler: async (ctx, args) => {
-        const existingUser = await ctx.db
-            .query("users")
-            .withIndex("by_clerk", (q) => q.eq("clerkId", args.clerkId))
-            .unique();
+  handler: async (ctx, args) => {
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
 
-        if (existingUser) {
-            await ctx.db.patch(existingUser._id, {
-                email: args.email,
-                name: args.name,
-                avatar: args.avatar,
-            });
+    if (existingUser) {
+      await ctx.db.patch(existingUser._id, {
+        email: args.email,
+        name: args.name,
+        avatar: args.avatar,
+      });
 
-            return existingUser._id;
-        }
+      return existingUser._id;
+    }
 
-        const userId = await ctx.db.insert("users", {
-            clerkId: args.clerkId,
-            email: args.email,
-            name: args.name,
-            avatar: args.avatar,
-        });
+    const userId = await ctx.db.insert("users", {
+      clerkId: args.clerkId,
+      email: args.email,
+      name: args.name,
+      avatar: args.avatar,
+    });
 
-        await createDefaultTeam(ctx, { ...args, userId });
+    await createDefaultTeam(ctx, { ...args, userId });
 
-        return userId;
-    },
+    return userId;
+  },
 });
 
 export const getUser = authedQuery({
-    args: {},
+  args: {},
 
-    handler: async (ctx) => {
-        const user = await ctx.db.get(ctx.userId);
+  handler: async (ctx) => {
+    const user = await ctx.db.get(ctx.userId);
 
-        if (!user) notFound("User");
+    if (!user) notFound("User");
 
-        return user;
-    },
+    return user;
+  },
 });
 
 export const deleteUser = internalMutation({
-    args: {
-        clerkId: v.string(),
-    },
+  args: {
+    clerkId: v.string(),
+  },
 
-    handler: async (ctx, { clerkId }) => {
-        const user = await ctx.db
-            .query("users")
-            .withIndex("by_clerk", (q) => q.eq("clerkId", clerkId))
-            .unique();
+  handler: async (ctx, { clerkId }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk", (q) => q.eq("clerkId", clerkId))
+      .unique();
 
-        if (!user) return;
+    if (!user) return;
 
-        await cascadeDeleteUser(ctx, user._id);
-    },
+    await cascadeDeleteUser(ctx, user._id);
+  },
 });

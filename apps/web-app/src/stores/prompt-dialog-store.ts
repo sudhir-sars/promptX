@@ -1,84 +1,84 @@
-import { Id } from "@/convex/_generated/dataModel";
 import { create } from "zustand";
+import type { Id } from "@/convex/_generated/dataModel";
 
 export type PromptDialogMode = "create" | "edit";
 
 type PromptDialogStore = {
-    isOpen: boolean;
+  isOpen: boolean;
 
-    mode: PromptDialogMode;
+  mode: PromptDialogMode;
 
-    promptId?: string;
+  promptId: string | undefined;
 
-    name: string;
-    description: string;
+  name: string;
+  description: string;
 
-    openCreate: () => void;
+  openCreate: () => void;
 
-    openEdit: (promptId: Id<"prompts">, name: string, description?: string) => void;
+  openEdit: (promptId: Id<"prompts">, name: string, description?: string) => void;
 
-    setOpen: (open: boolean) => void;
+  setOpen: (open: boolean) => void;
 
-    setName: (name: string) => void;
+  setName: (name: string) => void;
 
-    setDescription: (description: string) => void;
+  setDescription: (description: string) => void;
 
-    reset: () => void;
+  reset: () => void;
 };
 
 const initialState = {
-    isOpen: false,
+  isOpen: false,
 
-    mode: "create" as PromptDialogMode,
+  mode: "create" as PromptDialogMode,
 
-    promptId: undefined,
+  promptId: undefined,
 
-    name: "",
-    description: "",
+  name: "",
+  description: "",
 };
 
 export const usePromptDialogStore = create<PromptDialogStore>((set) => ({
-    ...initialState,
+  ...initialState,
 
-    openCreate: () =>
-        set({
-            isOpen: true,
+  openCreate: () =>
+    set({
+      isOpen: true,
 
-            mode: "create",
+      mode: "create",
 
-            promptId: undefined,
+      promptId: undefined,
 
-            name: "",
-            description: "",
-        }),
+      name: "",
+      description: "",
+    }),
 
-    openEdit: (promptId, name, description) =>
-        set({
-            isOpen: true,
+  openEdit: (promptId, name, description) =>
+    set({
+      isOpen: true,
 
-            mode: "edit",
+      mode: "edit",
 
-            promptId,
+      promptId,
 
-            name,
+      name,
 
-            description: description ?? "",
-        }),
+      description: description ?? "",
+    }),
 
-    setOpen: (open) =>
-        set({
-            isOpen: open,
-        }),
+  setOpen: (open) =>
+    set({
+      isOpen: open,
+    }),
 
-    setName: (name) =>
-        set({
-            name,
-        }),
+  setName: (name) =>
+    set({
+      name,
+    }),
 
-    setDescription: (description) =>
-        set({
-            description,
-        }),
+  setDescription: (description) =>
+    set({
+      description,
+    }),
 
-    reset: () => set(initialState),
+  reset: () => set(initialState),
 }));

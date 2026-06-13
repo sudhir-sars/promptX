@@ -1,128 +1,111 @@
 "use client";
 
 import type { IconType } from "react-icons";
-import { FaHouseFlag } from "react-icons/fa6";
-import { IoLogIn, IoPeople, IoRocket } from "react-icons/io5";
-import { FaNodeJs } from "react-icons/fa6";
-import { TbApi, TbHomeFilled, TbLogs, TbVersionsFilled } from "react-icons/tb";
-import { SiPython, SiReasonstudios } from "react-icons/si";
-import { SiRust } from "react-icons/si";
-import { SiGo } from "react-icons/si";
-import { CiBadgeDollar } from "react-icons/ci";
-import { HiMiniHome, HiMiniKey } from "react-icons/hi2";
-import { RxActivityLog } from "react-icons/rx";
-import {
-    TbTimeline, // Changelog
-    TbRouteAltLeft, // Roadmap
-} from "react-icons/tb";
-import { IoIosAnalytics } from "react-icons/io";
-import {
-    FiHome,
-    FiEdit3,
-    FiCompass,
-    FiSearch,
-    FiSettings,
-    FiBell,
-    FiSun,
-    FiMoon,
-    FiCopy,
-    FiTrash2,
-    FiUser,
-    FiUsers,
-    FiPlus,
-    FiChevronUp,
-    FiMenu,
-    FiChevronLeft,
-    FiChevronRight,
-    FiArrowUp,
-    FiLogOut,
-    FiCreditCard,
-    FiKey,
-    FiAlertTriangle,
-    FiMail,
-    FiLoader,
-    FiCheck,
-    FiCheckCircle,
-    FiX,
-} from "react-icons/fi";
-
-import {
-    RiRocketLine,
-    RiFlowChart,
-    RiTeamLine,
-    RiLoginCircleLine,
-    RiLightbulbLine,
-    RiSettings6Fill,
-} from "react-icons/ri";
-
-import {
-    TbBrandNextjs,
-    TbVersions,
-    TbTestPipe,
-    TbBuildingCommunity,
-    TbActivity,
-    TbLibrary,
-    TbChartDots,
-    TbRobot,
-    TbChecklist,
-} from "react-icons/tb";
-
-import { MdCompare, MdOutlineApartment } from "react-icons/md";
 import { BiCommand } from "react-icons/bi";
+import { CiBadgeDollar } from "react-icons/ci";
+import { FaHouseFlag, FaNodeJs } from "react-icons/fa6";
+import {
+  FiAlertTriangle,
+  FiArrowUp,
+  FiBell,
+  FiCheck,
+  FiCheckCircle,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronUp,
+  FiCompass,
+  FiCopy,
+  FiCreditCard,
+  FiEdit3,
+  FiLoader,
+  FiLogOut,
+  FiMail,
+  FiMenu,
+  FiMoon,
+  FiPlus,
+  FiSearch,
+  FiSun,
+  FiTrash2,
+  FiUser,
+  FiX,
+} from "react-icons/fi";
+import { HiMiniKey } from "react-icons/hi2";
+import { IoIosAnalytics } from "react-icons/io";
+import { IoLogIn, IoPeople, IoRocket } from "react-icons/io5";
+import { MdCompare, MdOutlineApartment } from "react-icons/md";
+import {
+  RiFlowChart,
+  RiLightbulbLine,
+  RiLoginCircleLine,
+  RiSettings6Fill,
+  RiTeamLine,
+} from "react-icons/ri";
+import { SiGo, SiPython, SiReasonstudios, SiRust } from "react-icons/si";
+import {
+  TbApi,
+  TbBrandNextjs,
+  TbBuildingCommunity,
+  TbChecklist,
+  TbHomeFilled,
+  TbLibrary,
+  TbLogs,
+  TbRobot,
+  TbRouteAltLeft, // Roadmap
+  TbTestPipe,
+  TbTimeline, // Changelog
+  TbVersionsFilled,
+} from "react-icons/tb";
 
 import { cn } from "@/lib/utils";
 
 type IconProps = {
-    className?: string;
-    size?: number;
-    strokeWidth?: number;
+  className?: string;
+  size?: number;
+  strokeWidth?: number;
 };
 
 function createAnimatedIcon(Icon: IconType) {
-    return function AnimatedIcon({
-        className,
-        size = 18,
-        animate = true,
-    }: IconProps & { animate?: boolean }) {
-        return (
-            <span
-                className={cn(
-                    "relative flex items-center justify-center overflow-hidden",
-                    className,
-                )}
-                style={{
-                    width: size,
-                    height: size,
-                }}
-            >
-                <Icon
-                    size={size}
-                    className={cn(
-                        "absolute transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                        animate
-                            ? [
-                                  "translate-y-0 opacity-100",
-                                  "group-hover:-translate-y-full",
-                                  "group-hover:opacity-0",
-                              ]
-                            : "translate-y-0 opacity-100",
-                    )}
-                />
+  return function AnimatedIcon({
+    className,
+    size = 18,
+    animate = true,
+  }: IconProps & { animate?: boolean }) {
+    return (
+      <span
+        className={cn("relative flex items-center justify-center overflow-hidden", className)}
+        style={{
+          width: size,
+          height: size,
+        }}
+      >
+        <Icon
+          size={size}
+          className={cn(
+            "absolute transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            animate
+              ? [
+                  "translate-y-0 opacity-100",
+                  "group-hover:-translate-y-full",
+                  "group-hover:opacity-0",
+                ]
+              : "translate-y-0 opacity-100",
+          )}
+        />
 
-                {animate && (
-                    <Icon
-                        size={size}
-                        className={cn(
-                            "absolute translate-y-full opacity-0",
-                            "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                            "group-hover:translate-y-0",
-                            "group-hover:opacity-100",
-                        )}
-                    />
-                )}
-            </span>
-        );
-    };
+        {animate && (
+          <Icon
+            size={size}
+            className={cn(
+              "absolute translate-y-full opacity-0",
+              "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "group-hover:translate-y-0",
+              "group-hover:opacity-100",
+            )}
+          />
+        )}
+      </span>
+    );
+  };
 }
 
 export const HomeIcon = createAnimatedIcon(TbHomeFilled);

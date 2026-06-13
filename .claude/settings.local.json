@@ -3,7 +3,24 @@
     "allow": [
       "PowerShell(Write-Output \"node: $\\(node -v\\)\"; Write-Output \"pnpm: $\\(pnpm -v 2>$null\\)\"; Write-Output \"cwd: $\\(Get-Location\\)\")",
       "PowerShell(pnpm install *)",
-      "PowerShell(pnpm *)"
+      "PowerShell(pnpm *)",
+      "Bash(pnpm -s turbo run type-check)",
+      "Bash(npx tsc *)",
+      "Bash(pnpm add *)",
+      "Bash(npx biome *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm why *)",
+      "Bash(grep -vE \"^Progress|resolved|^$\")",
+      "Bash(pnpm prune *)",
+      "Read(//tmp/**)",
+      "Bash(echo \"BIOME_EXIT=$?\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(echo \"biome exit = $?\")",
+      "Bash(echo \"biome real exit = $?\")",
+      "Bash(pnpm -s --filter @xevos/promptx build)",
+      "Bash(pnpm -s build)",
+      "Bash(pnpm -s lint)",
+      "Bash(pnpm -s type-check)"
     ]
   }
 }

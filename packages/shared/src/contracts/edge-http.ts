@@ -14,9 +14,7 @@ import type { DeploymentEnv } from "../types/env";
  */
 
 /** How a variant was chosen when a deployment has multiple variants. */
-export type RoutingInfo =
-  | { strategy: "user_sticky"; identifier: string }
-  | { strategy: "default" };
+export type RoutingInfo = { strategy: "user_sticky"; identifier: string } | { strategy: "default" };
 
 /** Route params for GET prompt. */
 export interface GetPromptParams {

@@ -1,115 +1,114 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-
+import { internalQuery } from "./_generated/server";
 import { authedMutation, authedQuery } from "./lib/auth";
 import { invariant } from "./lib/errors";
 import { requirePromptAccess, requireVersionAccess } from "./lib/permissions";
-import { internalQuery } from "./_generated/server";
 
 export const createVersion = authedMutation({
-    args: {
-        tag: v.optional(v.string()),
-        promptId: v.id("prompts"),
-        content: v.string(),
-    },
+  args: {
+    tag: v.optional(v.string()),
+    promptId: v.id("prompts"),
+    content: v.string(),
+  },
 
-    handler: async (ctx, { promptId, content, tag }) => {
-        const { prompt } = await requirePromptAccess(ctx, promptId);
+  handler: async (ctx, { promptId, content }) => {
+    const { prompt } = await requirePromptAccess(ctx, promptId);
 
-        const now = Date.now();
+    const now = Date.now();
 
-        const draft = await ctx.db
-            .query("versions")
-            .withIndex("by_prompt_draft", (q) => q.eq("promptId", promptId).eq("draft", true))
-            .unique();
+    const draft = await ctx.db
+      .query("versions")
+      .withIndex("by_prompt_draft", (q) => q.eq("promptId", promptId).eq("draft", true))
+      .unique();
 
-        invariant(draft, "No draft found");
+    invariant(draft, "No draft found");
 
-        await ctx.db.patch(draft._id, {
-            draft: false,
-            content,
-            updatedAt: now,
-        });
+    await ctx.db.patch(draft._id, {
+      draft: false,
+      content,
+      updatedAt: now,
+    });
 
-        const newDraftId = await ctx.db.insert("versions", {
-            teamId: prompt.teamId,
-            promptId,
+    const newDraftId = await ctx.db.insert("versions", {
+      teamId: prompt.teamId,
+      promptId,
 
-            tag: "draft",
-            sequence: draft.sequence + 1,
-            draft: true,
+      tag: "draft",
+      sequence: draft.sequence + 1,
+      draft: true,
 
-            content,
-            updatedAt: now,
-        });
+      content,
+      updatedAt: now,
+    });
 
-        const newDraft = await ctx.db.get(newDraftId);
+    const newDraft = await ctx.db.get(newDraftId);
 
-        invariant(newDraft, "Failed to create draft");
+    invariant(newDraft, "Failed to create draft");
 
-        return {
-            versionId: draft._id,
-            newDraft,
-        };
-    },
+    return {
+      versionId: draft._id,
+      newDraft,
+    };
+  },
 });
 
 export const listVersions = authedQuery({
-    args: {
-        promptId: v.id("prompts"),
-        paginationOpts: paginationOptsValidator,
-    },
+  args: {
+    promptId: v.id("prompts"),
+    paginationOpts: paginationOptsValidator,
+  },
 
-    handler: async (ctx, { promptId, paginationOpts }) => {
-        await requirePromptAccess(ctx, promptId);
+  handler: async (ctx, { promptId, paginationOpts }) => {
+    await requirePromptAccess(ctx, promptId);
 
-        return ctx.db
-            .query("versions")
-            .withIndex("by_prompt", (q) => q.eq("promptId", promptId))
-            .order("desc")
-            .paginate(paginationOpts);
-    },
+    return ctx.db
+      .query("versions")
+      .withIndex("by_prompt", (q) => q.eq("promptId", promptId))
+      .order("desc")
+      .paginate(paginationOpts);
+  },
 });
 
 export const getVersion = authedQuery({
-    args: {
-        versionId: v.id("versions"),
-    },
+  args: {
+    versionId: v.id("versions"),
+  },
 
-    handler: async (ctx, { versionId }) => {
-        const { version } = await requireVersionAccess(ctx, versionId);
+  handler: async (ctx, { versionId }) => {
+    const { version } = await requireVersionAccess(ctx, versionId);
 
-        return version;
-    },
+    return version;
+  },
 });
 
 export const updateVersion = authedMutation({
-    args: {
-        versionId: v.id("versions"),
-        content: v.optional(v.string()),
-        tag: v.optional(v.string()),
-    },
+  args: {
+    versionId: v.id("versions"),
+    content: v.optional(v.string()),
+    tag: v.optional(v.string()),
+  },
 
-    handler: async (ctx, { versionId, content, tag }) => {
-        const { version } = await requireVersionAccess(ctx, versionId);
+  handler: async (ctx, { versionId, content, tag }) => {
+    const { version } = await requireVersionAccess(ctx, versionId);
 
-        invariant(version.draft, "Only drafts can be edited");
+    invariant(version.draft, "Only drafts can be edited");
 
-        await ctx.db.patch(versionId, {
-            content: content ?? version.content,
-            tag: tag ?? version.tag,
-            updatedAt: Date.now(),
-        });
+    await ctx.db.patch(versionId, {
+      content: content ?? version.content,
+      tag: tag ?? version.tag,
+      updatedAt: Date.now(),
+    });
 
-        return versionId;
-    },
+    return versionId;
+  },
 });
 
 export const _getVersionsByIds = internalQuery({
-    args: {
-        versionIds: v.array(v.id("versions")),
-    },
-    handler: async (ctx, { versionIds }) => {
-        return Promise.all(versionIds.map((id) => ctx.db.get(id)));
-    },
+  args: {
+    versionIds: v.array(v.id("versions")),
+  },
+  handler: async (ctx, { versionIds }) => {
+    return Promise.all(versionIds.map((id) => ctx.db.get(id)));
+  },
 });
