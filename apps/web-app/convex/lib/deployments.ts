@@ -1,6 +1,9 @@
-import type { DeploymentEnv, KVPromptConfig } from "../../../../packages/shared/src";
+import type {
+  DeploymentEnv,
+  KVPromptConfig,
+} from "../../../../packages/shared/src";
 import { promptKvKey } from "../../../../packages/shared/src/utils";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { CreateDeployConfig } from "../types";
 import { invariant } from "./errors";
 import type { OwnershipCtx } from "./permissions";
@@ -13,7 +16,10 @@ export async function validateAndPrepareDeploymentConfig(
 ) {
   invariant(config.length > 0, "At least one version is required");
 
-  const totalTraffic = config.reduce((sum, deployment) => sum + deployment.traffic, 0);
+  const totalTraffic = config.reduce(
+    (sum, deployment) => sum + deployment.traffic,
+    0,
+  );
 
   invariant(totalTraffic === 100, "Traffic allocation must equal 100%");
 
@@ -36,7 +42,10 @@ export async function validateAndPrepareDeploymentConfig(
 
       invariant(version, "Version not found");
 
-      invariant(version.promptId === prompt._id, "Version does not belong to prompt");
+      invariant(
+        version.promptId === prompt._id,
+        "Version does not belong to prompt",
+      );
 
       invariant(!version.draft, "Draft versions cannot be deployed");
 
@@ -44,17 +53,19 @@ export async function validateAndPrepareDeploymentConfig(
     }),
   );
 
-  const deploymentConfig: Doc<"deployments">["config"] = versions.map((version, index) => {
-    const entry = config[index];
+  const deploymentConfig: Doc<"deployments">["config"] = versions.map(
+    (version, index) => {
+      const entry = config[index];
 
-    invariant(entry, "Deployment config entry not found");
+      invariant(entry, "Deployment config entry not found");
 
-    return {
-      versionId: version._id,
-      traffic: entry.traffic,
-      sequence: version.sequence,
-    };
-  });
+      return {
+        versionId: version._id,
+        traffic: entry.traffic,
+        sequence: version.sequence,
+      };
+    },
+  );
 
   const kvPayload: KVPromptConfig = {
     teamId: prompt.teamId,
@@ -78,7 +89,7 @@ export async function validateAndPrepareDeploymentConfig(
     kvPayload,
   };
 }
-export async function pushToCFKV(teamId: string, payload: KVPromptConfig) {
+export async function pushToCFKV(teamId: Id<"teams">, payload: KVPromptConfig) {
   const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"]!;
   const namespaceId = process.env["PROMPTX_PROMPTS_KV"]!;
   const token = process.env["CLOUDFLARE_API_TOKEN"]!;
@@ -99,7 +110,10 @@ export async function pushToCFKV(teamId: string, payload: KVPromptConfig) {
     },
   );
 
-  invariant(response.ok, `Cloudflare KV deployment failed: ${await response.text()}`);
+  invariant(
+    response.ok,
+    `Cloudflare KV deployment failed: ${await response.text()}`,
+  );
   return payload;
 }
 
@@ -118,6 +132,9 @@ export async function deleteFromCFKV(slug: string, teamId: string) {
     },
   );
 
-  invariant(response.ok, `Cloudflare KV delete failed: ${await response.text()}`);
+  invariant(
+    response.ok,
+    `Cloudflare KV delete failed: ${await response.text()}`,
+  );
   return { success: true };
 }

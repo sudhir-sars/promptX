@@ -51,7 +51,7 @@ export const deployPromptVersion = authedAction({
     );
     const { deployment, kvPayload } = result;
 
-    await pushToCFKV(promptId, kvPayload);
+    await pushToCFKV(deployment.teamId, kvPayload);
 
     return { deployment };
   },
