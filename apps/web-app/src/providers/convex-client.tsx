@@ -19,6 +19,7 @@ function useClerkAuth() {
 }
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
+
   return (
     <ConvexProviderWithClerk client={db} useAuth={useClerkAuth}>
       <AuthLoading>
