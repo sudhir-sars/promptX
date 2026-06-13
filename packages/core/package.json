@@ -1,6 +1,6 @@
 {
-  "name": "@promptx/shared",
-  "version": "0.0.0",
+  "name": "@promptx/core",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "sideEffects": false,
@@ -40,11 +40,9 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "type-check": "tsc --noEmit",
-    "clean": "rimraf dist"
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "rimraf": "^6.0.1",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0"
   }
