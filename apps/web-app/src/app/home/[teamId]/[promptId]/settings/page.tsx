@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { EditIcon, TrashIcon } from "@/components/ui/icons";
+import { CopyIcon, EditIcon, TrashIcon } from "@/components/ui/icons";
 import { usePrompts } from "@/hooks/use-prompt";
 import { usePromptDialogStore } from "@/stores/prompt-dialog-store";
 
@@ -40,6 +41,34 @@ export default function SettingsPage() {
 
               <p className="mt-1 text-sm font-medium">{prompt.name}</p>
             </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-4xl border">
+          <div className="p-5">
+            <div className="flex w-full items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs text-muted-foreground">Slug / Identifier</div>
+
+                <p className="mt-1 break-all font-mono text-sm font-medium">{prompt.slug}</p>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(prompt.slug);
+                  toast.success("Slug copied to clipboard");
+                }}
+              >
+                <CopyIcon />
+                Copy
+              </Button>
+            </div>
+
+            <p className="mt-3 text-xs text-muted-foreground">
+              Used to retrieve this prompt through the API. This value is immutable after creation.
+            </p>
           </div>
         </section>
 

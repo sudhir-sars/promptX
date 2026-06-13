@@ -11,8 +11,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import type { CreateDeployConfig } from "@/convex/types";
+import { Switch } from "@/components/ui/switch";
+import type { CreateDeployConfig, DeploymentEnv } from "@/convex/types";
 import { useDeployments } from "@/hooks/use-deployments";
 import { cn } from "@/lib/utils";
 import { useDeployDialogStore } from "@/stores/deploy-dialog-store";
@@ -21,6 +29,12 @@ type DeployDialogItem = CreateDeployConfig[number] & {
   isNew: boolean;
 };
 
+const ENVIRONMENTS: { value: DeploymentEnv; label: string }[] = [
+  { value: "production", label: "Production" },
+  { value: "preview", label: "Preview" },
+  { value: "development", label: "Development" },
+];
+
 export function DeployDialog() {
   const { deployments, deployVersion } = useDeployments();
 
@@ -28,8 +42,12 @@ export function DeployDialog() {
 
   const [isDeploying, setIsDeploying] = useState(false);
   const [abTesting, setAbTesting] = useState(false);
+  const [env, setEnv] = useState<DeploymentEnv>("production");
 
-  const activeDeployment = deployments.find((deployment) => deployment?.active);
+  const activeDeployment = useMemo(
+    () => deployments.find((deployment) => deployment?.active && deployment.env === env) ?? null,
+    [deployments, env],
+  );
 
   const hasExistingDeployment =
     !!activeDeployment &&
@@ -54,6 +72,15 @@ export function DeployDialog() {
 
   const [config, setConfig] = useState<DeployDialogItem[]>([]);
 
+  // Reset the environment to production each time the dialog opens.
+  useEffect(() => {
+    if (isOpen) {
+      setEnv("production");
+    }
+  }, [isOpen]);
+
+  // Reset A/B state + config when the dialog opens, the version changes,
+  // or the user switches environments mid-dialog.
   useEffect(() => {
     if (!isOpen || !version) {
       return;
@@ -61,14 +88,22 @@ export function DeployDialog() {
 
     setAbTesting(false);
     setConfig(simpleConfig);
-  }, [isOpen, version, simpleConfig]);
+  }, [isOpen, version, simpleConfig, env]);
 
   const totalTraffic = useMemo(() => config.reduce((sum, item) => sum + item.traffic, 0), [config]);
 
   const remainingTraffic = Math.max(0, 100 - totalTraffic);
 
-  const enableABTesting = () => {
+  const envLabel = ENVIRONMENTS.find((option) => option.value === env)?.label ?? env;
+
+  const enableABTesting = (enabled: boolean) => {
     if (!activeDeployment || !version) {
+      return;
+    }
+
+    if (!enabled) {
+      setAbTesting(false);
+      setConfig(simpleConfig);
       return;
     }
 
@@ -143,8 +178,10 @@ export function DeployDialog() {
       setIsDeploying(true);
 
       await deployVersion({
-        env: "production",
-        config: config.map(({ isNew, ...item }) => item),
+        env,
+        config: abTesting
+          ? config.map(({ isNew, ...item }) => item)
+          : simpleConfig.map(({ isNew, ...item }) => item),
       });
 
       close();
@@ -166,40 +203,83 @@ export function DeployDialog() {
           <DialogDescription>
             {abTesting
               ? "Split traffic between deployed versions."
-              : hasExistingDeployment
-                ? `Deploy v${version.sequence} or create an A/B test against the current deployment.`
-                : `Deploy v${version.sequence} to production.`}
+              : `Deploy v${version.sequence} to ${envLabel}.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium">Environment</span>
+
+            <Select
+              value={env}
+              onValueChange={(value) => setEnv(value as DeploymentEnv)}
+              disabled={isDeploying}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent>
+                {ENVIRONMENTS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {!abTesting ? (
             <>
               <div className="rounded-xl border bg-muted/20 p-4">
-                <div className="mb-4 text-sm font-medium">New Deployment</div>
+                <div className="mb-3 text-sm font-medium">New Deployment</div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 text-sm font-medium">v{version.sequence}</div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Version</span>
+                  <span className="font-medium">v{version.sequence}</span>
+                </div>
 
-                  <Slider value={[100]} disabled className="flex-1" />
-
-                  <div className="w-12 text-right text-sm text-muted-foreground">100%</div>
+                <div className="mt-2 flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Environment</span>
+                  <span className="font-medium">{envLabel}</span>
                 </div>
               </div>
 
               {hasExistingDeployment && (
-                <Button
-                  variant="outline"
-                  onClick={enableABTesting}
-                  disabled={isDeploying}
-                  className="w-full"
-                >
-                  Enable A/B Testing
-                </Button>
+                <div className="flex items-center justify-between rounded-xl border p-4">
+                  <div>
+                    <div className="text-sm font-medium">Enable A/B Testing</div>
+                    <div className="text-xs text-muted-foreground">
+                      Split traffic with the current deployment instead of replacing it.
+                    </div>
+                  </div>
+
+                  <Switch
+                    checked={abTesting}
+                    onCheckedChange={enableABTesting}
+                    disabled={isDeploying}
+                  />
+                </div>
               )}
             </>
           ) : (
             <>
+              <div className="flex items-center justify-between rounded-xl border p-4">
+                <div>
+                  <div className="text-sm font-medium">Enable A/B Testing</div>
+                  <div className="text-xs text-muted-foreground">
+                    Split traffic between deployed versions in {envLabel}.
+                  </div>
+                </div>
+
+                <Switch
+                  checked={abTesting}
+                  onCheckedChange={enableABTesting}
+                  disabled={isDeploying}
+                />
+              </div>
+
               <div
                 className={cn(
                   "space-y-5 transition-opacity",

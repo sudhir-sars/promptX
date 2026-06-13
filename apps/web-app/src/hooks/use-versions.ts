@@ -4,7 +4,7 @@ import { useDebouncedCallback, useIntersection } from "@mantine/hooks";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useEffect, useMemo } from "react";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { db } from "@/lib/convex/client";
 import { consumeError } from "@/lib/errors";
 import { useVersionsStore } from "@/stores/data-store";
@@ -13,7 +13,9 @@ import { useStudioStore } from "@/stores/prompt-editor-store";
 
 export type CreateVersionArgs = FunctionArgs<typeof api.versions.createVersion>;
 export type UpdateVersionArgs = FunctionArgs<typeof api.versions.updateVersion>;
-export type CreateVersionResult = FunctionReturnType<typeof api.versions.createVersion>;
+export type CreateVersionResult = FunctionReturnType<
+  typeof api.versions.createVersion
+>;
 
 const PAGE_SIZE = 10;
 
@@ -30,7 +32,9 @@ export function useVersions() {
   const selectedVersionId = useStudioStore((state) => state.selectedVersion);
 
   const versionIds = useVersionsStore((state) =>
-    promptId ? (state.versionIdsByPrompt[promptId] ?? EMPTY_ARRAY) : EMPTY_ARRAY,
+    promptId
+      ? (state.versionIdsByPrompt[promptId] ?? EMPTY_ARRAY)
+      : EMPTY_ARRAY,
   );
 
   const versionsById = useVersionsStore((state) => state.versionsById);
@@ -56,7 +60,10 @@ export function useVersions() {
     }
   };
 
-  const updateVersionDebounced = useDebouncedCallback(updateVersionRemote, 2375);
+  const updateVersionDebounced = useDebouncedCallback(
+    updateVersionRemote,
+    2375,
+  );
 
   useEffect(() => {
     return () => {
@@ -79,7 +86,8 @@ export function useVersions() {
       return;
     }
 
-    const status = currentCursor.status === "uninitialized" ? "loading" : "loading-more";
+    const status =
+      currentCursor.status === "uninitialized" ? "loading" : "loading-more";
 
     store.setCursor(promptId, { ...currentCursor, status });
 
@@ -101,7 +109,9 @@ export function useVersions() {
       });
     } catch (error) {
       useVersionsStore.getState().setCursor(promptId, {
-        ...(useVersionsStore.getState().cursorByPrompt[promptId] ?? { next: null }),
+        ...(useVersionsStore.getState().cursorByPrompt[promptId] ?? {
+          next: null,
+        }),
         status: "error",
       });
 
@@ -114,14 +124,21 @@ export function useVersions() {
 
     const shouldLoadInitial = cursor.status === "uninitialized";
 
-    const shouldLoadMore = cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
+    const shouldLoadMore =
+      cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
 
     if (!shouldLoadInitial && !shouldLoadMore) {
       return;
     }
 
     void loadVersions();
-  }, [promptId, cursor.status, cursor.next, entry?.isIntersecting, loadVersions]);
+  }, [
+    promptId,
+    cursor.status,
+    cursor.next,
+    entry?.isIntersecting,
+    loadVersions,
+  ]);
 
   const versionId = selectedVersionId ?? versions[0]?._id;
 
@@ -136,10 +153,13 @@ export function useVersions() {
     updateVersionDebounced.cancel();
 
     try {
-      const { newDraft, versionId } = await db.mutation(api.versions.createVersion, {
-        ...args,
-        promptId,
-      });
+      const { newDraft, versionId } = await db.mutation(
+        api.versions.createVersion,
+        {
+          ...args,
+          promptId,
+        },
+      );
 
       const store = useVersionsStore.getState();
 
@@ -153,7 +173,9 @@ export function useVersions() {
 
           [promptId]: [
             newDraft._id,
-            ...(state.versionIdsByPrompt[promptId] ?? []).filter((id) => id !== newDraft._id),
+            ...(state.versionIdsByPrompt[promptId] ?? []).filter(
+              (id) => id !== newDraft._id,
+            ),
           ],
         },
       }));
@@ -197,6 +219,33 @@ export function useVersions() {
     updateVersionDebounced({ versionId, tag });
   };
 
+  const setTag = async (versionId: Id<"versions">, tag: string) => {
+    const trimmed = tag.trim();
+    const previous = useVersionsStore.getState().versionsById[versionId]?.tag;
+
+    // Optimistic update in store (cast: clearing sets `tag` to undefined,
+    // which exactOptionalPropertyTypes disallows on the literal).
+    useVersionsStore.getState().update(versionId, {
+      tag: trimmed,
+      updatedAt: Date.now(),
+    });
+
+    try {
+      // Omitting `tag` clears it server-side (handler patches `undefined`).
+      await db.mutation(
+        api.versions.setVersionTag,
+        trimmed ? { versionId, tag: trimmed } : { versionId },
+      );
+    } catch (error) {
+      // Revert optimistic update on failure
+      useVersionsStore
+        .getState()
+        .update(versionId, { tag: previous } as Partial<Doc<"versions">>);
+
+      consumeError(error);
+    }
+  };
+
   const setSelectedVersion = (versionId: Id<"versions">) => {
     updateVersionDebounced.flush();
 
@@ -214,6 +263,7 @@ export function useVersions() {
 
     updateContent,
     updateTag,
+    setTag,
 
     setSelectedVersion,
 

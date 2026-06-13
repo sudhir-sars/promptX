@@ -10,7 +10,9 @@ import { consumeError } from "@/lib/errors";
 import { useDeploymentsStore } from "@/stores/data-store";
 import { useNavigationStore } from "@/stores/navigation-store";
 
-export type DeployVersionArgs = FunctionArgs<typeof api.actions.deployments.deployPromptVersion>;
+export type DeployVersionArgs = FunctionArgs<
+  typeof api.actions.deployments.deployPromptVersion
+>;
 export type RollbackDeploymentArgs = FunctionArgs<
   typeof api.actions.deployments.rollbackDeployment
 >;
@@ -31,20 +33,24 @@ function syncDeploymentCache(deployment: Doc<"deployments">, active: boolean) {
   if (active) {
     for (const deploymentId of deploymentIds) {
       const existing = store.deploymentsById[deploymentId];
-      if (existing?.active) {
+      if (existing?.active && existing.env === deployment.env) {
         useDeploymentsStore.getState().update(deploymentId, { active: false });
       }
     }
   }
 
-  useDeploymentsStore.getState().cache(deployment.promptId, [{ ...deployment, active }]);
+  useDeploymentsStore
+    .getState()
+    .cache(deployment.promptId, [{ ...deployment, active }]);
 }
 
 export function useDeployments() {
   const promptId = useNavigationStore((state) => state.promptId);
 
   const deploymentIds = useDeploymentsStore((state) =>
-    promptId ? (state.deploymentIdsByPrompt[promptId] ?? EMPTY_ARRAY) : EMPTY_ARRAY,
+    promptId
+      ? (state.deploymentIdsByPrompt[promptId] ?? EMPTY_ARRAY)
+      : EMPTY_ARRAY,
   );
 
   const deploymentsById = useDeploymentsStore((state) => state.deploymentsById);
@@ -85,7 +91,8 @@ export function useDeployments() {
       return;
     }
 
-    const status = currentCursor.status === "uninitialized" ? "loading" : "loading-more";
+    const status =
+      currentCursor.status === "uninitialized" ? "loading" : "loading-more";
 
     store.setCursor(promptId, { ...currentCursor, status });
 
@@ -107,7 +114,9 @@ export function useDeployments() {
       });
     } catch (error) {
       useDeploymentsStore.getState().setCursor(promptId, {
-        ...(useDeploymentsStore.getState().cursorByPrompt[promptId] ?? { next: null }),
+        ...(useDeploymentsStore.getState().cursorByPrompt[promptId] ?? {
+          next: null,
+        }),
         status: "error",
       });
 
@@ -120,23 +129,33 @@ export function useDeployments() {
 
     const shouldLoadInitial = cursor.status === "uninitialized";
 
-    const shouldLoadMore = cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
+    const shouldLoadMore =
+      cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
 
     if (!shouldLoadInitial && !shouldLoadMore) {
       return;
     }
 
     void loadDeployments();
-  }, [promptId, cursor.status, cursor.next, entry?.isIntersecting, loadDeployments]);
+  }, [
+    promptId,
+    cursor.status,
+    cursor.next,
+    entry?.isIntersecting,
+    loadDeployments,
+  ]);
 
   const deployVersion = async (args: Omit<DeployVersionArgs, "promptId">) => {
     if (!promptId) return;
 
     try {
-      const { deployment } = await db.action(api.actions.deployments.deployPromptVersion, {
-        ...args,
-        promptId,
-      });
+      const { deployment } = await db.action(
+        api.actions.deployments.deployPromptVersion,
+        {
+          ...args,
+          promptId,
+        },
+      );
 
       syncDeploymentCache(deployment, true);
     } catch (error) {
@@ -145,21 +164,42 @@ export function useDeployments() {
   };
 
   const rollbackDeployment = async (deploymentId: Id<"deployments">) => {
-    if (!activeDeployment) return;
+    const target = deployments.find(
+      (deployment) => deployment._id === deploymentId,
+    );
+
+    if (!target) return false;
+
+    // Roll back within the target deployment's own environment.
+    const current = deployments.find(
+      (deployment) => deployment.active && deployment.env === target.env,
+    );
+
+    if (!current) {
+      consumeError(
+        new Error("No active deployment to roll back in this environment."),
+      );
+
+      return false;
+    }
 
     try {
       const { newDeployment, prevDeployment } = await db.action(
         api.actions.deployments.rollbackDeployment,
         {
           rollbackTo: deploymentId,
-          currentDeploymentId: activeDeployment._id,
+          currentDeploymentId: current._id,
         },
       );
 
       syncDeploymentCache(prevDeployment, false);
       syncDeploymentCache(newDeployment, true);
+
+      return true;
     } catch (error) {
       consumeError(error);
+
+      return false;
     }
   };
 

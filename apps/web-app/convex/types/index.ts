@@ -40,12 +40,6 @@ export type AuthedCtx = MutationCtx & {
   userId: Id<"users">;
 };
 
-/** @deprecated Prefer `ApiKeyRecord` from @promptx/shared. */
-export type CfKeyRecords = {
-  keyId: string;
-  hash: string;
-};
-
 export type AuthedActionCtx = ActionCtx & {
   userId: Id<"users">;
 };

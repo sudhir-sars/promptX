@@ -1,12 +1,15 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useDeployments } from "@/hooks/use-deployments";
 import { getRelativeTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
+import { useRollbackDialogStore } from "@/stores/rollback-dialog-store";
 
 export default function DeploymentsPage() {
-  const { deployments, activeDeployment, status, hasMore, loadMoreRef, rollbackDeployment } =
-    useDeployments();
+  const { deployments, activeDeployment, status, hasMore, loadMoreRef } = useDeployments();
+
+  const openRollbackDialog = useRollbackDialogStore((state) => state.open);
 
   return (
     <div className="h-full flex-1 space-y-6  overflow-y-auto no-scrollbar px-6 pt-20 md:px-10 lg:px-16 transition-all duration-300 ease-in-out">
@@ -19,24 +22,34 @@ export default function DeploymentsPage() {
       </div>
 
       <div className="rounded-2xl border p-4 sm:rounded-3xl sm:p-6">
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              "h-2 w-2 rounded-full",
-              activeDeployment ? "bg-emerald-500" : "bg-muted-foreground/40",
-            )}
-          />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <div
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  activeDeployment ? "bg-emerald-500" : "bg-muted-foreground/40",
+                )}
+              />
 
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {activeDeployment ? "Live" : "Inactive"}
-          </span>
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {activeDeployment ? "Live" : "Inactive"}
+              </span>
+            </div>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              {activeDeployment
+                ? "Serving production traffic."
+                : "No versions are currently receiving production traffic."}
+            </p>
+          </div>
+
+          {activeDeployment && (
+            <Button size="sm" variant="outline" onClick={() => openRollbackDialog()}>
+              Rollback
+            </Button>
+          )}
         </div>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          {activeDeployment
-            ? "Serving production traffic."
-            : "No versions are currently receiving production traffic."}
-        </p>
 
         {activeDeployment && (
           <div className="mt-5 space-y-4">
@@ -66,29 +79,8 @@ export default function DeploymentsPage() {
         {deployments.map((deployment) => {
           if (!deployment) return null;
 
-          const activate = async () => {
-            const confirmed = confirm(
-              `Rollback to deployment from ${getRelativeTime(
-                deployment._creationTime,
-              )}? This will replace the current production deployment.`,
-            );
-
-            if (!confirmed) return;
-
-            await rollbackDeployment(deployment._id);
-          };
-
           return (
-            <button
-              key={deployment._id}
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                void activate();
-              }}
-              className="block w-full border-b px-4 py-4 text-left transition-colors hover:bg-muted/50 sm:px-6"
-            >
+            <div key={deployment._id} className="block w-full border-b px-4 py-4 text-left sm:px-6">
               <div className="flex  justify-between gap-3">
                 <div className="flex flex-wrap gap-1.5">
                   {deployment.config.map((version) => (
@@ -114,7 +106,7 @@ export default function DeploymentsPage() {
                   </span>
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
 
