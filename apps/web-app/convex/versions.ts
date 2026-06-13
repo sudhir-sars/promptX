@@ -19,7 +19,9 @@ export const createVersion = authedMutation({
 
     const draft = await ctx.db
       .query("versions")
-      .withIndex("by_prompt_draft", (q) => q.eq("promptId", promptId).eq("draft", true))
+      .withIndex("by_prompt_draft", (q) =>
+        q.eq("promptId", promptId).eq("draft", true),
+      )
       .unique();
 
     invariant(draft, "No draft found");
@@ -97,6 +99,44 @@ export const updateVersion = authedMutation({
     await ctx.db.patch(versionId, {
       content: content ?? version.content,
       tag: tag ?? version.tag,
+      updatedAt: Date.now(),
+    });
+
+    return versionId;
+  },
+});
+
+export const setVersionTag = authedMutation({
+  args: {
+    versionId: v.id("versions"),
+    tag: v.optional(v.string()),
+  },
+
+  handler: async (ctx, { versionId, tag }) => {
+    const { version } = await requireVersionAccess(ctx, versionId);
+
+    invariant(!version.draft, "Draft versions cannot be tagged");
+
+    const trimmed = tag?.trim();
+
+    if (trimmed) {
+      invariant(trimmed.toLowerCase() !== "draft", '"draft" is a reserved tag');
+
+      const exstsingTaggedVersion = await ctx.db
+        .query("versions")
+        .withIndex("by_prompt_tag", (q) =>
+          q.eq("promptId", version.promptId).eq("tag", trimmed),
+        )
+        .unique();
+
+      invariant(
+        !exstsingTaggedVersion,
+        `Tag "${trimmed}" is already used by v${exstsingTaggedVersion?.sequence}`,
+      );
+    }
+
+    await ctx.db.patch(versionId, {
+      tag: trimmed,
       updatedAt: Date.now(),
     });
 

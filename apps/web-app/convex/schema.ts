@@ -76,6 +76,7 @@ export default defineSchema({
     .index("by_team", ["teamId"])
     .index("by_prompt", ["promptId"])
     .index("by_prompt_draft", ["promptId", "draft"])
+    .index("by_prompt_tag", ["promptId", "tag"])
     .index("by_prompt_sequence", ["promptId", "sequence"])
     .searchIndex("tags", {
       searchField: "tag",
