@@ -1,0 +1,5 @@
+# .npmignore
+src/
+tsup.config.ts
+tsconfig.json
+dist/*.map

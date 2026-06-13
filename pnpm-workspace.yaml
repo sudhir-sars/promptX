@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Pre-approve native build scripts (pnpm 10+ blocks these by default).
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
+  - sharp
+  - unrs-resolver

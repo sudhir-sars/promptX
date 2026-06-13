@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Write-Output \"node: $\\(node -v\\)\"; Write-Output \"pnpm: $\\(pnpm -v 2>$null\\)\"; Write-Output \"cwd: $\\(Get-Location\\)\")",
+      "PowerShell(pnpm install *)",
+      "PowerShell(pnpm *)"
+    ]
+  }
+}
