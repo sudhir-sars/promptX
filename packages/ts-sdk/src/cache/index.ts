@@ -1,6 +1,14 @@
 export interface CacheEntry<T> {
     value: T;
+    /** Wall-clock time after which the entry is stale but still servable (SWR window opens). */
+    staleAt: number;
+    /** Wall-clock time after which the entry is expired and must be evicted (a true cache miss). */
     expiresAt: number;
+}
+
+export interface CacheHit<T> {
+    value: T;
+    isStale: boolean;
 }
 
 export class MemoryCache<T> {
@@ -8,12 +16,14 @@ export class MemoryCache<T> {
     private readonly expiryQueue = new Set<string>();
 
     constructor(
-        private readonly ttlMs: number,
+        private readonly maxAgeMs: number,
+        private readonly staleWhileRevalidateMs: number,
         private readonly maxSize: number = 1000,
     ) {}
 
-    get(key: string): T | undefined {
-        this.reclaimExpired(Date.now());
+    get(key: string): CacheHit<T> | undefined {
+        const now = Date.now();
+        this.reclaimExpired(now);
 
         const entry = this.store.get(key);
         if (!entry) return undefined;
@@ -21,7 +31,7 @@ export class MemoryCache<T> {
         this.store.delete(key);
         this.store.set(key, entry);
 
-        return entry.value;
+        return { value: entry.value, isStale: now >= entry.staleAt };
     }
 
     set(key: string, value: T): void {
@@ -30,7 +40,11 @@ export class MemoryCache<T> {
         this.reclaimExpired(now);
 
         this.store.delete(key);
-        this.store.set(key, { value, expiresAt: now + this.ttlMs });
+        this.store.set(key, {
+            value,
+            staleAt: now + this.maxAgeMs,
+            expiresAt: now + this.maxAgeMs + this.staleWhileRevalidateMs,
+        });
 
         this.expiryQueue.delete(key);
         this.expiryQueue.add(key);
