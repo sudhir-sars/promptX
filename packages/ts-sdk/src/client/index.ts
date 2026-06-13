@@ -1,6 +1,7 @@
 import {
     DEFAULT_BASE_URL,
-    DEFAULT_CACHE_TTL_MS,
+    DEFAULT_CACHE_MAX_AGE_MS,
+    DEFAULT_CACHE_STALE_WHILE_REVALIDATE_MS,
     DEFAULT_REQUEST_TIMEOUT_MS,
     promptResourcePath,
     SESSION_HEADER,
@@ -8,7 +9,7 @@ import {
 import { MemoryCache } from "../cache";
 import { PromptFetchError } from "../zlib/error";
 import { isPrompt } from "../zlib/prompt";
-import { DeploymentEnv, Prompt, XevosConfig } from "../ztypes";
+import { DeploymentEnv, Prompt, PromptXConfig } from "../ztypes";
 
 export class PromptXClient {
     private readonly baseUrl: string;
@@ -19,7 +20,7 @@ export class PromptXClient {
     private readonly cache: MemoryCache<Prompt>;
     private readonly inflight = new Map<string, Promise<Prompt>>();
 
-    constructor(config: XevosConfig) {
+    constructor(config: PromptXConfig) {
         this.apiKey = config.apiKey;
         this.env = config.env ?? "production";
         this.requestTimeoutMs = config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
@@ -27,7 +28,10 @@ export class PromptXClient {
         const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
         this.baseUrl = baseUrl.replace(/\/+$/, "");
 
-        this.cache = new MemoryCache<Prompt>(config.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS);
+        this.cache = new MemoryCache<Prompt>(
+            config.cacheMaxAgeMs ?? DEFAULT_CACHE_MAX_AGE_MS,
+            config.cacheStaleWhileRevalidateMs ?? DEFAULT_CACHE_STALE_WHILE_REVALIDATE_MS,
+        );
     }
 
     async getPrompt(
@@ -45,13 +49,25 @@ export class PromptXClient {
             const cached = this.cache.get(cacheKey);
 
             if (cached !== undefined) {
-                return cached;
+                if (cached.isStale) {
+                    void this.revalidate(cacheKey, identifier, sessionId).catch(() => {});
+                }
+                return cached.value;
             }
 
             const existingRequest = this.inflight.get(cacheKey);
             if (existingRequest) {
                 return existingRequest;
             }
+        }
+
+        return this.revalidate(cacheKey, identifier, sessionId);
+    }
+
+    private revalidate(cacheKey: string, identifier: string, sessionId?: string): Promise<Prompt> {
+        const existingRequest = this.inflight.get(cacheKey);
+        if (existingRequest) {
+            return existingRequest;
         }
 
         const request = this.fetchPrompt(identifier, sessionId)
