@@ -4,105 +4,105 @@ import { create } from "zustand";
 
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 
-import { CursorState } from "@/types";
+import type { CursorState } from "@/types";
 
 type VersionsStore = {
-    versionsById: Record<Id<"versions">, Doc<"versions">>;
+  versionsById: Record<Id<"versions">, Doc<"versions">>;
 
-    versionIdsByPrompt: Record<Id<"prompts">, Id<"versions">[]>;
+  versionIdsByPrompt: Record<Id<"prompts">, Id<"versions">[]>;
 
-    cursorByPrompt: Record<Id<"prompts">, CursorState>;
+  cursorByPrompt: Record<Id<"prompts">, CursorState>;
 
-    cache(promptId: Id<"prompts">, versions: Doc<"versions">[]): void;
+  cache(promptId: Id<"prompts">, versions: Doc<"versions">[]): void;
 
-    update(id: Id<"versions">, partial: Partial<Doc<"versions">>): void;
+  update(id: Id<"versions">, partial: Partial<Doc<"versions">>): void;
 
-    setCursor(promptId: Id<"prompts">, cursor: CursorState): void;
+  setCursor(promptId: Id<"prompts">, cursor: CursorState): void;
 
-    removeByScope(promptId: Id<"prompts">): void;
+  removeByScope(promptId: Id<"prompts">): void;
 
-    reset(): void;
+  reset(): void;
 };
 
 export const useVersionsStore = create<VersionsStore>((set) => ({
-    versionsById: {},
+  versionsById: {},
 
-    versionIdsByPrompt: {},
+  versionIdsByPrompt: {},
 
-    cursorByPrompt: {},
+  cursorByPrompt: {},
 
-    cache(promptId, versions) {
-        set((state) => ({
-            versionsById: {
-                ...state.versionsById,
+  cache(promptId, versions) {
+    set((state) => ({
+      versionsById: {
+        ...state.versionsById,
 
-                ...Object.fromEntries(versions.map((version) => [version._id, version])),
-            },
+        ...Object.fromEntries(versions.map((version) => [version._id, version])),
+      },
 
-            versionIdsByPrompt: {
-                ...state.versionIdsByPrompt,
+      versionIdsByPrompt: {
+        ...state.versionIdsByPrompt,
 
-                [promptId]: [
-                    ...(state.versionIdsByPrompt[promptId] ?? []),
+        [promptId]: [
+          ...(state.versionIdsByPrompt[promptId] ?? []),
 
-                    ...versions
-                        .filter((v) => !(state.versionIdsByPrompt[promptId] ?? []).includes(v._id))
-                        .map((v) => v._id),
-                ],
-            },
-        }));
-    },
+          ...versions
+            .filter((v) => !(state.versionIdsByPrompt[promptId] ?? []).includes(v._id))
+            .map((v) => v._id),
+        ],
+      },
+    }));
+  },
 
-    update(id, partial) {
-        set((state) => {
-            const version = state.versionsById[id];
-            if (!version) return state;
+  update(id, partial) {
+    set((state) => {
+      const version = state.versionsById[id];
+      if (!version) return state;
 
-            return {
-                versionsById: {
-                    ...state.versionsById,
+      return {
+        versionsById: {
+          ...state.versionsById,
 
-                    [id]: { ...version, ...partial },
-                },
-            };
-        });
-    },
+          [id]: { ...version, ...partial },
+        },
+      };
+    });
+  },
 
-    setCursor(promptId, cursor) {
-        set((state) => ({
-            cursorByPrompt: {
-                ...state.cursorByPrompt,
+  setCursor(promptId, cursor) {
+    set((state) => ({
+      cursorByPrompt: {
+        ...state.cursorByPrompt,
 
-                [promptId]: cursor,
-            },
-        }));
-    },
+        [promptId]: cursor,
+      },
+    }));
+  },
 
-    removeByScope(promptId) {
-        set((state) => {
-            const versionIds = state.versionIdsByPrompt[promptId] ?? [];
+  removeByScope(promptId) {
+    set((state) => {
+      const versionIds = state.versionIdsByPrompt[promptId] ?? [];
 
-            const versionsById = { ...state.versionsById };
-            for (const id of versionIds) {
-                delete versionsById[id];
-            }
+      const versionsById = { ...state.versionsById };
+      for (const id of versionIds) {
+        delete versionsById[id];
+      }
 
-            const versionIdsByPrompt = { ...state.versionIdsByPrompt };
-            const cursorByPrompt = { ...state.cursorByPrompt };
-            delete versionIdsByPrompt[promptId];
-            delete cursorByPrompt[promptId];
+      const versionIdsByPrompt = { ...state.versionIdsByPrompt };
+      const cursorByPrompt = { ...state.cursorByPrompt };
+      delete versionIdsByPrompt[promptId];
+      delete cursorByPrompt[promptId];
 
-            return { versionsById, versionIdsByPrompt, cursorByPrompt };
-        });
-    },
+      return { versionsById, versionIdsByPrompt, cursorByPrompt };
+    });
+  },
 
-    reset() {
-        set({
-            versionsById: {},
+  reset() {
+    set({
+      versionsById: {},
 
-            versionIdsByPrompt: {},
+      versionIdsByPrompt: {},
 
-            cursorByPrompt: {},
-        });
-    },
+      cursorByPrompt: {},
+    });
+  },
 }));

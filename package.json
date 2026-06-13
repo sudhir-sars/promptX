@@ -6,12 +6,16 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check . && turbo run type-check",
     "type-check": "turbo run type-check",
     "deploy": "turbo run deploy"
   },
   "devDependencies": {
-    "prettier": "^3.3.3",
+    "@biomejs/biome": "^2.5.0",
     "turbo": "^2.3.0",
     "typescript": "^5.6.0"
   },

@@ -1,72 +1,72 @@
-import { Id } from "@/convex/_generated/dataModel";
 import { create } from "zustand";
+import type { Id } from "@/convex/_generated/dataModel";
 
 export type TeamDialogMode = "create" | "edit";
 
 type TeamDialogStore = {
-    isOpen: boolean;
+  isOpen: boolean;
 
-    mode: TeamDialogMode;
+  mode: TeamDialogMode;
 
-    teamId?: Id<"teams">;
+  teamId: Id<"teams"> | undefined;
 
-    name: string;
+  name: string;
 
-    openCreate: () => void;
+  openCreate: () => void;
 
-    openEdit: (teamId: Id<"teams">, name: string) => void;
+  openEdit: (teamId: Id<"teams">, name: string) => void;
 
-    setOpen: (open: boolean) => void;
+  setOpen: (open: boolean) => void;
 
-    setName: (name: string) => void;
+  setName: (name: string) => void;
 
-    reset: () => void;
+  reset: () => void;
 };
 
 const initialState = {
-    isOpen: false,
+  isOpen: false,
 
-    mode: "create" as TeamDialogMode,
+  mode: "create" as TeamDialogMode,
 
-    teamId: undefined,
+  teamId: undefined,
 
-    name: "",
+  name: "",
 };
 
 export const useTeamDialogStore = create<TeamDialogStore>((set) => ({
-    ...initialState,
+  ...initialState,
 
-    openCreate: () =>
-        set({
-            isOpen: true,
+  openCreate: () =>
+    set({
+      isOpen: true,
 
-            mode: "create",
+      mode: "create",
 
-            teamId: undefined,
+      teamId: undefined,
 
-            name: "",
-        }),
+      name: "",
+    }),
 
-    openEdit: (teamId, name) =>
-        set({
-            isOpen: true,
+  openEdit: (teamId, name) =>
+    set({
+      isOpen: true,
 
-            mode: "edit",
+      mode: "edit",
 
-            teamId,
+      teamId,
 
-            name,
-        }),
+      name,
+    }),
 
-    setOpen: (open) =>
-        set({
-            isOpen: open,
-        }),
+  setOpen: (open) =>
+    set({
+      isOpen: open,
+    }),
 
-    setName: (name) =>
-        set({
-            name,
-        }),
+  setName: (name) =>
+    set({
+      name,
+    }),
 
-    reset: () => set(initialState),
+  reset: () => set(initialState),
 }));

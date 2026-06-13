@@ -5,28 +5,28 @@ import { create } from "zustand";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 type DeployDialogStore = {
-    isOpen: boolean;
+  isOpen: boolean;
 
-    version: Doc<"versions"> | null;
+  version: Doc<"versions"> | null;
 
-    open(version: Doc<"versions">): void;
+  open(version: Doc<"versions">): void;
 
-    close(): void;
+  close(): void;
 };
 
 const initialState = {
-    isOpen: false,
-    version: null,
+  isOpen: false,
+  version: null,
 };
 
 export const useDeployDialogStore = create<DeployDialogStore>((set) => ({
-    ...initialState,
+  ...initialState,
 
-    open: (version) =>
-        set({
-            isOpen: true,
-            version,
-        }),
+  open: (version) =>
+    set({
+      isOpen: true,
+      version,
+    }),
 
-    close: () => set(initialState),
+  close: () => set(initialState),
 }));
