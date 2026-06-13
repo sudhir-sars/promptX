@@ -1,5 +1,4 @@
-import type { ApiKeyRecord } from '@promptx/shared';
-
+import { ApiKeyRecord } from '@promptx/shared';
 // Canonical cross-service shapes now live in @promptx/shared. Re-export the
 // ones used across the edge for convenience.
 export type {
@@ -12,8 +11,6 @@ export type {
 	GetPromptResponse,
 	RoutingInfo,
 } from '@promptx/shared';
-
-// ---- Edge/Hono-specific types (framework-coupled, stay local) ----
 
 export type Variables = {
 	teamId: string;

@@ -1,7 +1,8 @@
-import { Doc, Id } from "../_generated/dataModel";
-import { CreateDeployConfig, DeploymentEnv, KVPromptConfig, PromptKVKey } from "../types";
+import { Doc } from "../_generated/dataModel";
+import { CreateDeployConfig } from "../types";
 import { invariant } from "./errors";
 import { OwnershipCtx } from "./permissions";
+import { KVPromptConfig, PromptKVKey, DeploymentEnv } from "../../../../packages/shared/src";
 
 export async function validateAndPrepareDeploymentConfig(
     ctx: OwnershipCtx,
@@ -71,7 +72,7 @@ export async function pushToCFKV(teamId: string, payload: KVPromptConfig) {
 
     const slug = payload.slug;
 
-    const key = `prompt:${teamId}${slug}`;
+    const key: PromptKVKey = `prompt:${teamId}:${slug}`;
 
     const response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${namespaceId}/values/${encodeURIComponent(key)}`,

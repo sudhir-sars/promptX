@@ -8,7 +8,7 @@ import { Doc } from "../_generated/dataModel";
 import { ActionCtx, internalAction } from "../_generated/server";
 import { internalError, invariant } from "../lib/errors";
 import { customAlphabet } from "nanoid";
-import { ApiKeyKVKey, CfKeyRecords } from "../types";
+import { ApiKeyKVKey, ApiKeyRecord } from "../../../../packages/shared/src";
 
 const generatePublicId = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 10);
 
@@ -76,7 +76,7 @@ export const syncUserKeysToKV = internalAction({
     args: { teamId: v.id("teams") },
     handler: async (ctx, { teamId }) => {
         const hashes = await ctx.runQuery(internal.apiKeys.getActiveHashesByUser, { teamId });
-        const payload: CfKeyRecords[] = hashes.map((key) => {
+        const payload: ApiKeyRecord[] = hashes.map((key) => {
             return {
                 keyId: key.keyId,
                 hash: key.hash,

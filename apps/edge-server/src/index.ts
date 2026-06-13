@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { PROMPTS_BASE_PATH } from '@promptx/shared';
 import health from './api/health';
 import prompts from './api/prompts';
-import type { AppEnv } from './ztypes';
+import type { AppEnv } from './types';
 
 import { auth } from './middleware';
 const app = new Hono<AppEnv>();

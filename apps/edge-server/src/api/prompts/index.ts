@@ -1,12 +1,7 @@
 import { Hono } from 'hono';
-import {
-	isDeploymentEnv,
-	promptKvKey,
-	type GetPromptResponse,
-	type KVPromptConfig,
-} from '@promptx/shared';
-import type { AppEnv } from '../../ztypes';
-import { selectVariant } from '../ztils';
+import { isDeploymentEnv, promptKvKey, type GetPromptResponse, type KVPromptConfig } from '@promptx/shared';
+import type { AppEnv } from '../../types';
+import { selectVariant } from './utils';
 
 const app = new Hono<AppEnv>();
 
@@ -50,9 +45,7 @@ app.get('/:identifier', async (c) => {
 	};
 
 	if (variants.length > 1) {
-		response.routing = sessionId
-			? { strategy: 'user_sticky', identifier: sessionId }
-			: { strategy: 'default' };
+		response.routing = sessionId ? { strategy: 'user_sticky', identifier: sessionId } : { strategy: 'default' };
 	}
 
 	return c.json(response, 200);

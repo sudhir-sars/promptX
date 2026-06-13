@@ -9,12 +9,12 @@ Edge never need them, and those stay coupled to Convex in the web app.
 
 ## Layers
 
-| Folder        | Contains                                              | Depends on        |
-| ------------- | ---------------------------------------------------- | ----------------- |
-| `types/`      | primitives (`DeploymentEnv`)                         | —                 |
-| `contracts/`  | cross-boundary DTOs (edge HTTP, KV storage, API key) | `types`           |
-| `constants/`  | route/version constants, runtime defaults            | —                 |
-| `utils/`      | pure helpers (kv-key builders, api-key parsing)      | `contracts`       |
+| Folder       | Contains                                             | Depends on  |
+| ------------ | ---------------------------------------------------- | ----------- |
+| `types/`     | primitives (`DeploymentEnv`)                         | —           |
+| `contracts/` | cross-boundary DTOs (edge HTTP, KV storage, API key) | `types`     |
+| `constants/` | route/version constants, runtime defaults            | —           |
+| `utils/`     | pure helpers (kv-key builders, api-key parsing)      | `contracts` |
 
 Allowed import direction: `utils → constants/contracts → types`.
 Nothing here may import an app or the SDK.

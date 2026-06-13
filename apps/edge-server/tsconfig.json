@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+    "moduleResolution": "bundler",
 		/* Visit https://aka.ms/tsconfig.json to read more about this file */
 
 		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
@@ -12,7 +13,6 @@
 		/* Specify what module code is generated. */
 		"module": "es2022",
 		/* Specify how TypeScript looks up a file from a given module specifier. */
-		"moduleResolution": "Bundler",
 		/* Enable importing .json files */
 		"resolveJsonModule": true,
 
@@ -36,7 +36,11 @@
 
 		/* Skip type checking all .d.ts files. */
 		"skipLibCheck": true,
-		"types": ["./worker-configuration.d.ts"]
+		"types": ["./worker-configuration.d.ts"],
+    "paths": {
+      "@promptx/shared": ["../core/src/index.ts"],
+      "@promptx/shared/*": ["../core/src/*/index.ts"]
+    }
 	},
 	"exclude": ["test"],
 	"include": ["worker-configuration.d.ts", "src/**/*.ts"]

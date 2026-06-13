@@ -2,7 +2,7 @@
 
 import type { MiddlewareHandler } from 'hono';
 import { apiKeysKvKey, parseApiKey, SESSION_HEADER, type ApiKeyRecord } from '@promptx/shared';
-import type { AppEnv } from './ztypes';
+import type { AppEnv } from './types';
 
 async function hashSecret(secret: string): Promise<string> {
 	const bytes = new TextEncoder().encode(secret);
