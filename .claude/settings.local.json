@@ -20,7 +20,9 @@
       "Bash(pnpm -s --filter @xevos/promptx build)",
       "Bash(pnpm -s build)",
       "Bash(pnpm -s lint)",
-      "Bash(pnpm -s type-check)"
+      "Bash(pnpm -s type-check)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
+      "WebSearch"
     ]
   }
 }
