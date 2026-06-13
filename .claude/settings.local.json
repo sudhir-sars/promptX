@@ -22,7 +22,8 @@
       "Bash(pnpm -s lint)",
       "Bash(pnpm -s type-check)",
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(pnpm publish *)"
     ]
   }
 }

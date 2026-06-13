@@ -11,10 +11,13 @@ import { useVersions } from "@/hooks/use-versions";
 import { getRelativeTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { useNavigationStore } from "@/stores/navigation-store";
+import { useVersionTagDialogStore } from "@/stores/version-tag-dialog-store";
 
 export default function VersionsPage() {
   const { versions, setSelectedVersion, status, hasMore, loadMoreRef } = useVersions();
   const { activeDeployment } = useDeployments();
+
+  const openTagDialog = useVersionTagDialogStore((state) => state.open);
 
   const promptId = useNavigationStore((state) => state.promptId);
 
@@ -39,12 +42,17 @@ export default function VersionsPage() {
         {versions.map((version) => {
           if (!version) return null;
 
+          // "draft" is an internal sentinel carried by promoted versions, not a user tag.
+          const userTag = version.tag && version.tag !== "draft" ? version.tag : null;
+
           return (
             <Link
               key={version._id}
               href={`/home/${version.teamId}/${version.promptId}`}
               onClick={() => setSelectedVersion(version._id)}
-              className={cn("block border-b px-4 py-4 transition-colors hover:bg-muted/50 sm:px-6")}
+              className={cn(
+                "group block border-b px-4 py-4 transition-colors hover:bg-muted/50 sm:px-6",
+              )}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-wrap min-w-0 items-center gap-2">
@@ -53,7 +61,7 @@ export default function VersionsPage() {
                   </span>
 
                   <span className="truncate text-xs font-medium rounded-full border px-2 py-1">
-                    {version.tag || "Untitled"}
+                    {userTag || "Untitled"}
                   </span>
                   {activeDeployment?.config.some((dep) => dep.versionId === version._id) && (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
@@ -63,9 +71,23 @@ export default function VersionsPage() {
                   )}
                 </div>
 
-                <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
-                  {getRelativeTime(version._creationTime)}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openTagDialog(version);
+                    }}
+                    className="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                  >
+                    {userTag ? "Edit Tag" : "Add Tag"}
+                  </button>
+
+                  <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
+                    {getRelativeTime(version._creationTime)}
+                  </span>
+                </div>
               </div>
             </Link>
           );
