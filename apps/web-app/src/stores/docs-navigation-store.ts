@@ -3,38 +3,36 @@
 import { create } from "zustand";
 
 type DocsNavigationStore = {
-  leftSidebarOpen: boolean;
-  rightSidebarOpen: boolean;
+	leftSidebarOpen: boolean;
+	rightSidebarOpen: boolean;
 
-  desktop: boolean;
-  xlDesktop: boolean;
+	desktop: boolean;
+	xlDesktop: boolean;
 
-  navigate: (
-    navigation: Partial<Omit<DocsNavigationStore, "navigate" | "syncDesktop" | "syncXlDesktop">>,
-  ) => void;
+	navigate: (navigation: Partial<Omit<DocsNavigationStore, "navigate" | "syncDesktop" | "syncXlDesktop">>) => void;
 
-  syncDesktop: (desktop: boolean) => void;
-  syncXlDesktop: (xlDesktop: boolean) => void;
+	syncDesktop: (desktop: boolean) => void;
+	syncXlDesktop: (xlDesktop: boolean) => void;
 };
 
 export const useDocsNavigationStore = create<DocsNavigationStore>((set) => ({
-  leftSidebarOpen: false,
-  rightSidebarOpen: false,
+	leftSidebarOpen: false,
+	rightSidebarOpen: false,
 
-  desktop: false,
-  xlDesktop: false,
+	desktop: false,
+	xlDesktop: false,
 
-  navigate: (navigation) => set(navigation),
+	navigate: (navigation) => set(navigation),
 
-  syncDesktop: (desktop) =>
-    set({
-      desktop,
-      leftSidebarOpen: desktop,
-    }),
+	syncDesktop: (desktop) =>
+		set({
+			desktop,
+			leftSidebarOpen: desktop,
+		}),
 
-  syncXlDesktop: (xlDesktop) =>
-    set({
-      xlDesktop,
-      rightSidebarOpen: xlDesktop,
-    }),
+	syncXlDesktop: (xlDesktop) =>
+		set({
+			xlDesktop,
+			rightSidebarOpen: xlDesktop,
+		}),
 }));

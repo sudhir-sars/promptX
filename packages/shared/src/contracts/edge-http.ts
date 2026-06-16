@@ -18,25 +18,25 @@ export type RoutingInfo = { strategy: "user_sticky"; identifier: string } | { st
 
 /** Route params for GET prompt. */
 export interface GetPromptParams {
-  identifier: string;
+	identifier: string;
 }
 
 /** Query string for GET prompt. */
 export interface GetPromptQuery {
-  env: DeploymentEnv;
+	env: DeploymentEnv;
 }
 
 /** Canonical success body returned by the Edge for a resolved prompt. */
 export interface GetPromptResponse {
-  identifier: string;
-  env: DeploymentEnv;
-  content: string;
-  sequence: number;
-  traffic: number;
-  routing?: RoutingInfo;
+	identifier: string;
+	env: DeploymentEnv;
+	content: string;
+	sequence: number;
+	traffic: number;
+	routing?: RoutingInfo;
 }
 
 /** Canonical error body for any non-2xx Edge response. */
 export interface EdgeErrorResponse {
-  error: string;
+	error: string;
 }

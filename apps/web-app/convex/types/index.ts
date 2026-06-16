@@ -9,11 +9,11 @@ import type { ActionCtx, MutationCtx } from "../_generated/server";
 // is owned by the shared package (single source of truth with the Edge).
 // ---------------------------------------------------------------------------
 export type {
-  ApiKeyKVKey,
-  ApiKeyRecord,
-  DeploymentEnv,
-  KVPromptConfig,
-  PromptKVKey,
+	ApiKeyKVKey,
+	ApiKeyRecord,
+	DeploymentEnv,
+	KVPromptConfig,
+	PromptKVKey,
 } from "@promptx/shared";
 
 import type { KVPromptConfig } from "@promptx/shared";
@@ -34,69 +34,65 @@ export type Member = Doc<"members">;
 export type Team = Doc<"teams">;
 
 export type AuthedCtx = MutationCtx & {
-  avatar: string;
-  name: string;
-  email: string;
-  userId: Id<"users">;
+	avatar: string;
+	name: string;
+	email: string;
+	userId: Id<"users">;
 };
 
 export type AuthedActionCtx = ActionCtx & {
-  userId: Id<"users">;
+	userId: Id<"users">;
 };
 
 export const createDeployConfig = v.array(
-  v.object({
-    versionId: v.id("versions"),
-    traffic: v.number(),
-    sequence: v.number(),
-  }),
+	v.object({
+		versionId: v.id("versions"),
+		traffic: v.number(),
+		sequence: v.number(),
+	}),
 );
 
-export const deploymentEnv = v.union(
-  v.literal("production"),
-  v.literal("preview"),
-  v.literal("development"),
-);
+export const deploymentEnv = v.union(v.literal("production"), v.literal("preview"), v.literal("development"));
 
 export type CreateDeployConfig = Infer<typeof createDeployConfig>;
 
 export interface RollbackDeploymentResult {
-  newDeployment: Doc<"deployments">;
-  prevDeployment: Doc<"deployments">;
-  kvPayload: KVPromptConfig;
+	newDeployment: Doc<"deployments">;
+	prevDeployment: Doc<"deployments">;
+	kvPayload: KVPromptConfig;
 }
 
 export interface DeployPromptVersionResult {
-  deployment: Doc<"deployments">;
-  kvPayload: KVPromptConfig;
+	deployment: Doc<"deployments">;
+	kvPayload: KVPromptConfig;
 }
 
 export const auditAction = v.union(
-  v.literal("create"),
-  v.literal("update"),
-  v.literal("delete"),
+	v.literal("create"),
+	v.literal("update"),
+	v.literal("delete"),
 
-  v.literal("activate"),
-  v.literal("deactivate"),
+	v.literal("activate"),
+	v.literal("deactivate"),
 
-  v.literal("accept"),
-  v.literal("decline"),
-  v.literal("cancel"),
+	v.literal("accept"),
+	v.literal("decline"),
+	v.literal("cancel"),
 
-  v.literal("revoke"),
+	v.literal("revoke"),
 
-  v.literal("join"),
-  v.literal("leave"),
+	v.literal("join"),
+	v.literal("leave"),
 );
 
 export const auditResource = v.union(
-  v.literal("team"),
-  v.literal("membership"),
-  v.literal("invite"),
+	v.literal("team"),
+	v.literal("membership"),
+	v.literal("invite"),
 
-  v.literal("prompt"),
-  v.literal("version"),
-  v.literal("deployment"),
+	v.literal("prompt"),
+	v.literal("version"),
+	v.literal("deployment"),
 
-  v.literal("apiKey"),
+	v.literal("apiKey"),
 );

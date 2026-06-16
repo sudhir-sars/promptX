@@ -5,107 +5,93 @@ import { BiCommand } from "react-icons/bi";
 import { CiBadgeDollar } from "react-icons/ci";
 import { FaHouseFlag, FaNodeJs } from "react-icons/fa6";
 import {
-  FiAlertTriangle,
-  FiArrowUp,
-  FiBell,
-  FiCheck,
-  FiCheckCircle,
-  FiChevronLeft,
-  FiChevronRight,
-  FiChevronUp,
-  FiCompass,
-  FiCopy,
-  FiCreditCard,
-  FiEdit3,
-  FiLoader,
-  FiLogOut,
-  FiMail,
-  FiMenu,
-  FiMoon,
-  FiPlus,
-  FiSearch,
-  FiSun,
-  FiTrash2,
-  FiUser,
-  FiX,
+	FiAlertTriangle,
+	FiArrowUp,
+	FiBell,
+	FiCheck,
+	FiCheckCircle,
+	FiChevronLeft,
+	FiChevronRight,
+	FiChevronUp,
+	FiCompass,
+	FiCopy,
+	FiCreditCard,
+	FiEdit3,
+	FiLoader,
+	FiLogOut,
+	FiMail,
+	FiMenu,
+	FiMoon,
+	FiPlus,
+	FiSearch,
+	FiSun,
+	FiTrash2,
+	FiUser,
+	FiX,
 } from "react-icons/fi";
 import { HiMiniKey } from "react-icons/hi2";
 import { IoIosAnalytics } from "react-icons/io";
 import { IoLogIn, IoPeople, IoRocket } from "react-icons/io5";
 import { MdCompare, MdOutlineApartment } from "react-icons/md";
-import {
-  RiFlowChart,
-  RiLightbulbLine,
-  RiLoginCircleLine,
-  RiSettings6Fill,
-  RiTeamLine,
-} from "react-icons/ri";
+import { RiFlowChart, RiLightbulbLine, RiLoginCircleLine, RiSettings6Fill, RiTeamLine } from "react-icons/ri";
 import { SiGo, SiPython, SiReasonstudios, SiRust } from "react-icons/si";
 import {
-  TbApi,
-  TbBrandNextjs,
-  TbBuildingCommunity,
-  TbChecklist,
-  TbHomeFilled,
-  TbLibrary,
-  TbLogs,
-  TbRobot,
-  TbRouteAltLeft, // Roadmap
-  TbTestPipe,
-  TbTimeline, // Changelog
-  TbVersionsFilled,
+	TbApi,
+	TbBrandNextjs,
+	TbBuildingCommunity,
+	TbChecklist,
+	TbHomeFilled,
+	TbLibrary,
+	TbLogs,
+	TbRobot,
+	TbRouteAltLeft, // Roadmap
+	TbTestPipe,
+	TbTimeline, // Changelog
+	TbVersionsFilled,
 } from "react-icons/tb";
 
 import { cn } from "@/lib/utils";
 
 type IconProps = {
-  className?: string;
-  size?: number;
-  strokeWidth?: number;
+	className?: string;
+	size?: number;
+	strokeWidth?: number;
 };
 
 function createAnimatedIcon(Icon: IconType) {
-  return function AnimatedIcon({
-    className,
-    size = 18,
-    animate = true,
-  }: IconProps & { animate?: boolean }) {
-    return (
-      <span
-        className={cn("relative flex items-center justify-center overflow-hidden", className)}
-        style={{
-          width: size,
-          height: size,
-        }}
-      >
-        <Icon
-          size={size}
-          className={cn(
-            "absolute transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            animate
-              ? [
-                  "translate-y-0 opacity-100",
-                  "group-hover:-translate-y-full",
-                  "group-hover:opacity-0",
-                ]
-              : "translate-y-0 opacity-100",
-          )}
-        />
+	return function AnimatedIcon({ className, size = 18, animate = true }: IconProps & { animate?: boolean }) {
+		return (
+			<span
+				className={cn("relative flex items-center justify-center overflow-hidden", className)}
+				style={{
+					width: size,
+					height: size,
+				}}
+			>
+				<Icon
+					size={size}
+					className={cn(
+						"absolute transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+						animate
+							? ["translate-y-0 opacity-100", "group-hover:-translate-y-full", "group-hover:opacity-0"]
+							: "translate-y-0 opacity-100",
+					)}
+				/>
 
-        {animate && (
-          <Icon
-            size={size}
-            className={cn(
-              "absolute translate-y-full opacity-0",
-              "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              "group-hover:translate-y-0",
-              "group-hover:opacity-100",
-            )}
-          />
-        )}
-      </span>
-    );
-  };
+				{animate && (
+					<Icon
+						size={size}
+						className={cn(
+							"absolute translate-y-full opacity-0",
+							"transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+							"group-hover:translate-y-0",
+							"group-hover:opacity-100",
+						)}
+					/>
+				)}
+			</span>
+		);
+	};
 }
 
 export const HomeIcon = createAnimatedIcon(TbHomeFilled);

@@ -10,213 +10,179 @@ import { consumeError } from "@/lib/errors";
 import { useDeploymentsStore } from "@/stores/data-store";
 import { useNavigationStore } from "@/stores/navigation-store";
 
-export type DeployVersionArgs = FunctionArgs<
-  typeof api.actions.deployments.deployPromptVersion
->;
-export type RollbackDeploymentArgs = FunctionArgs<
-  typeof api.actions.deployments.rollbackDeployment
->;
+export type DeployVersionArgs = FunctionArgs<typeof api.actions.deployments.deployPromptVersion>;
+export type RollbackDeploymentArgs = FunctionArgs<typeof api.actions.deployments.rollbackDeployment>;
 
 const PAGE_SIZE = 10;
 
 const EMPTY_ARRAY: readonly [] = [];
 
 const EMPTY_CURSOR = {
-  next: null,
-  status: "uninitialized" as const,
+	next: null,
+	status: "uninitialized" as const,
 };
 
 function syncDeploymentCache(deployment: Doc<"deployments">, active: boolean) {
-  const store = useDeploymentsStore.getState();
-  const deploymentIds = store.deploymentIdsByPrompt[deployment.promptId] ?? [];
+	const store = useDeploymentsStore.getState();
+	const deploymentIds = store.deploymentIdsByPrompt[deployment.promptId] ?? [];
 
-  if (active) {
-    for (const deploymentId of deploymentIds) {
-      const existing = store.deploymentsById[deploymentId];
-      if (existing?.active && existing.env === deployment.env) {
-        useDeploymentsStore.getState().update(deploymentId, { active: false });
-      }
-    }
-  }
+	if (active) {
+		for (const deploymentId of deploymentIds) {
+			const existing = store.deploymentsById[deploymentId];
+			if (existing?.active && existing.env === deployment.env) {
+				useDeploymentsStore.getState().update(deploymentId, { active: false });
+			}
+		}
+	}
 
-  useDeploymentsStore
-    .getState()
-    .cache(deployment.promptId, [{ ...deployment, active }]);
+	useDeploymentsStore.getState().cache(deployment.promptId, [{ ...deployment, active }]);
 }
 
 export function useDeployments() {
-  const promptId = useNavigationStore((state) => state.promptId);
+	const promptId = useNavigationStore((state) => state.promptId);
 
-  const deploymentIds = useDeploymentsStore((state) =>
-    promptId
-      ? (state.deploymentIdsByPrompt[promptId] ?? EMPTY_ARRAY)
-      : EMPTY_ARRAY,
-  );
+	const deploymentIds = useDeploymentsStore((state) =>
+		promptId ? (state.deploymentIdsByPrompt[promptId] ?? EMPTY_ARRAY) : EMPTY_ARRAY,
+	);
 
-  const deploymentsById = useDeploymentsStore((state) => state.deploymentsById);
+	const deploymentsById = useDeploymentsStore((state) => state.deploymentsById);
 
-  const deployments = useMemo(
-    () =>
-      deploymentIds
-        .map((id) => deploymentsById[id])
-        .filter((deployment) => deployment !== undefined),
-    [deploymentIds, deploymentsById],
-  );
+	const deployments = useMemo(
+		() => deploymentIds.map((id) => deploymentsById[id]).filter((deployment) => deployment !== undefined),
+		[deploymentIds, deploymentsById],
+	);
 
-  const cursor = useDeploymentsStore((state) =>
-    promptId ? (state.cursorByPrompt[promptId] ?? EMPTY_CURSOR) : EMPTY_CURSOR,
-  );
+	const cursor = useDeploymentsStore((state) =>
+		promptId ? (state.cursorByPrompt[promptId] ?? EMPTY_CURSOR) : EMPTY_CURSOR,
+	);
 
-  const { ref, entry } = useIntersection({
-    threshold: 0,
-  });
+	const { ref, entry } = useIntersection({
+		threshold: 0,
+	});
 
-  const activeDeployment = useMemo(
-    () => deployments.find((deployment) => deployment.active) ?? null,
-    [deployments],
-  );
+	const activeDeployment = useMemo(() => deployments.find((deployment) => deployment.active) ?? null, [deployments]);
 
-  const loadDeployments = async () => {
-    if (!promptId) return;
+	const loadDeployments = async () => {
+		if (!promptId) return;
 
-    const store = useDeploymentsStore.getState();
-    const currentCursor = store.cursorByPrompt[promptId] ?? EMPTY_CURSOR;
+		const store = useDeploymentsStore.getState();
+		const currentCursor = store.cursorByPrompt[promptId] ?? EMPTY_CURSOR;
 
-    if (
-      currentCursor.status === "loading" ||
-      currentCursor.status === "loading-more" ||
-      currentCursor.status === "error" ||
-      currentCursor.status === "exhausted"
-    ) {
-      return;
-    }
+		if (
+			currentCursor.status === "loading" ||
+			currentCursor.status === "loading-more" ||
+			currentCursor.status === "error" ||
+			currentCursor.status === "exhausted"
+		) {
+			return;
+		}
 
-    const status =
-      currentCursor.status === "uninitialized" ? "loading" : "loading-more";
+		const status = currentCursor.status === "uninitialized" ? "loading" : "loading-more";
 
-    store.setCursor(promptId, { ...currentCursor, status });
+		store.setCursor(promptId, { ...currentCursor, status });
 
-    try {
-      const result = await db.query(api.deployments.listDeployments, {
-        promptId,
+		try {
+			const result = await db.query(api.deployments.listDeployments, {
+				promptId,
 
-        paginationOpts: {
-          cursor: currentCursor.next,
-          numItems: PAGE_SIZE,
-        },
-      });
+				paginationOpts: {
+					cursor: currentCursor.next,
+					numItems: PAGE_SIZE,
+				},
+			});
 
-      useDeploymentsStore.getState().cache(promptId, result.page);
+			useDeploymentsStore.getState().cache(promptId, result.page);
 
-      useDeploymentsStore.getState().setCursor(promptId, {
-        next: result.continueCursor,
-        status: result.isDone ? "exhausted" : "loaded",
-      });
-    } catch (error) {
-      useDeploymentsStore.getState().setCursor(promptId, {
-        ...(useDeploymentsStore.getState().cursorByPrompt[promptId] ?? {
-          next: null,
-        }),
-        status: "error",
-      });
+			useDeploymentsStore.getState().setCursor(promptId, {
+				next: result.continueCursor,
+				status: result.isDone ? "exhausted" : "loaded",
+			});
+		} catch (error) {
+			useDeploymentsStore.getState().setCursor(promptId, {
+				...(useDeploymentsStore.getState().cursorByPrompt[promptId] ?? {
+					next: null,
+				}),
+				status: "error",
+			});
 
-      consumeError(error);
-    }
-  };
+			consumeError(error);
+		}
+	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: loadDeployments reads store via getState(), not reactive state
+	useEffect(() => {
+		if (!promptId) return;
 
-  useEffect(() => {
-    if (!promptId) return;
+		const shouldLoadInitial = cursor.status === "uninitialized";
 
-    const shouldLoadInitial = cursor.status === "uninitialized";
+		const shouldLoadMore = cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
 
-    const shouldLoadMore =
-      cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
+		if (!shouldLoadInitial && !shouldLoadMore) {
+			return;
+		}
 
-    if (!shouldLoadInitial && !shouldLoadMore) {
-      return;
-    }
+		void loadDeployments();
+	}, [promptId, cursor.status, cursor.next, entry?.isIntersecting]);
 
-    void loadDeployments();
-  }, [
-    promptId,
-    cursor.status,
-    cursor.next,
-    entry?.isIntersecting,
-    loadDeployments,
-  ]);
+	const deployVersion = async (args: Omit<DeployVersionArgs, "promptId">) => {
+		if (!promptId) return;
 
-  const deployVersion = async (args: Omit<DeployVersionArgs, "promptId">) => {
-    if (!promptId) return;
+		try {
+			const { deployment } = await db.action(api.actions.deployments.deployPromptVersion, {
+				...args,
+				promptId,
+			});
 
-    try {
-      const { deployment } = await db.action(
-        api.actions.deployments.deployPromptVersion,
-        {
-          ...args,
-          promptId,
-        },
-      );
+			syncDeploymentCache(deployment, true);
+		} catch (error) {
+			consumeError(error);
+		}
+	};
 
-      syncDeploymentCache(deployment, true);
-    } catch (error) {
-      consumeError(error);
-    }
-  };
+	const rollbackDeployment = async (deploymentId: Id<"deployments">) => {
+		const target = deployments.find((deployment) => deployment._id === deploymentId);
 
-  const rollbackDeployment = async (deploymentId: Id<"deployments">) => {
-    const target = deployments.find(
-      (deployment) => deployment._id === deploymentId,
-    );
+		if (!target) return false;
 
-    if (!target) return false;
+		// Roll back within the target deployment's own environment.
+		const current = deployments.find((deployment) => deployment.active && deployment.env === target.env);
 
-    // Roll back within the target deployment's own environment.
-    const current = deployments.find(
-      (deployment) => deployment.active && deployment.env === target.env,
-    );
+		if (!current) {
+			consumeError(new Error("No active deployment to roll back in this environment."));
 
-    if (!current) {
-      consumeError(
-        new Error("No active deployment to roll back in this environment."),
-      );
+			return false;
+		}
 
-      return false;
-    }
+		try {
+			const { newDeployment, prevDeployment } = await db.action(api.actions.deployments.rollbackDeployment, {
+				rollbackTo: deploymentId,
+				currentDeploymentId: current._id,
+			});
 
-    try {
-      const { newDeployment, prevDeployment } = await db.action(
-        api.actions.deployments.rollbackDeployment,
-        {
-          rollbackTo: deploymentId,
-          currentDeploymentId: current._id,
-        },
-      );
+			syncDeploymentCache(prevDeployment, false);
+			syncDeploymentCache(newDeployment, true);
 
-      syncDeploymentCache(prevDeployment, false);
-      syncDeploymentCache(newDeployment, true);
+			return true;
+		} catch (error) {
+			consumeError(error);
 
-      return true;
-    } catch (error) {
-      consumeError(error);
+			return false;
+		}
+	};
 
-      return false;
-    }
-  };
+	return {
+		deployments,
+		activeDeployment,
 
-  return {
-    deployments,
-    activeDeployment,
+		cursor,
+		status: cursor.status,
 
-    cursor,
-    status: cursor.status,
+		loadDeployments,
 
-    loadDeployments,
+		deployVersion,
+		rollbackDeployment,
 
-    deployVersion,
-    rollbackDeployment,
-
-    loadMoreRef: ref,
-    hasMore: !!cursor.next,
-    hasDeployments: deployments.length > 0,
-  };
+		loadMoreRef: ref,
+		hasMore: !!cursor.next,
+		hasDeployments: deployments.length > 0,
+	};
 }

@@ -15,7 +15,7 @@ export const API_KEY_SECRET_DELIMITER = ".";
 export const API_KEY_METADATA_PARTS = 4;
 
 export interface ParsedApiKey {
-  keyId: string;
-  teamId: string;
-  secret: string;
+	keyId: string;
+	teamId: string;
+	secret: string;
 }
