@@ -10,22 +10,22 @@ import type { DeploymentEnv } from "../types/env";
  */
 
 export interface KVPromptVariant {
-  content: string;
-  sequence: number;
-  traffic: number;
+	content: string;
+	sequence: number;
+	traffic: number;
 }
 
 export interface KVPromptConfig {
-  teamId: string;
-  slug: string;
-  env: DeploymentEnv;
-  variants: KVPromptVariant[];
+	teamId: string;
+	slug: string;
+	env: DeploymentEnv;
+	variants: KVPromptVariant[];
 }
 
 /** Per-team API key record as stored in KV. `hash` never leaves the boundary. */
 export interface ApiKeyRecord {
-  keyId: string;
-  hash: string;
+	keyId: string;
+	hash: string;
 }
 
 /** KV key shapes. Build them via `promptKvKey` / `apiKeysKvKey`. */

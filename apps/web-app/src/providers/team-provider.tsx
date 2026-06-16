@@ -10,34 +10,34 @@ import { useTeamsStore } from "@/stores/data-store";
 import { useNavigationStore } from "@/stores/navigation-store";
 
 type TeamProviderProps = {
-  teamId: Id<"teams">;
-  children: ReactNode;
+	teamId: Id<"teams">;
+	children: ReactNode;
 };
 
 export function TeamProvider({ teamId, children }: TeamProviderProps) {
-  const navigate = useNavigationStore((state) => state.navigate);
+	const navigate = useNavigationStore((state) => state.navigate);
 
-  const [missing, setMissing] = useState(false);
+	const [missing, setMissing] = useState(false);
 
-  useEffect(() => {
-    navigate({ teamId });
-  }, [teamId, navigate]);
+	useEffect(() => {
+		navigate({ teamId });
+	}, [teamId, navigate]);
 
-  useEffect(() => {
-    const cached = useTeamsStore.getState().teamsById[teamId];
+	useEffect(() => {
+		const cached = useTeamsStore.getState().teamsById[teamId];
 
-    if (cached) return;
+		if (cached) return;
 
-    void db.query(api.teams.team.getTeam, { teamId }).then((team) => {
-      if (team) {
-        useTeamsStore.getState().cache([team]);
-      } else {
-        setMissing(true);
-      }
-    });
-  }, [teamId]);
+		void db.query(api.teams.team.getTeam, { teamId }).then((team) => {
+			if (team) {
+				useTeamsStore.getState().cache([team]);
+			} else {
+				setMissing(true);
+			}
+		});
+	}, [teamId]);
 
-  if (missing) notFound();
+	if (missing) notFound();
 
-  return <>{children}</>;
+	return <>{children}</>;
 }

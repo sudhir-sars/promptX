@@ -3,17 +3,17 @@
 import { create } from "zustand";
 
 type RollbackDialogStore = {
-  isOpen: boolean;
+	isOpen: boolean;
 
-  open(): void;
+	open(): void;
 
-  close(): void;
+	close(): void;
 };
 
 export const useRollbackDialogStore = create<RollbackDialogStore>((set) => ({
-  isOpen: false,
+	isOpen: false,
 
-  open: () => set({ isOpen: true }),
+	open: () => set({ isOpen: true }),
 
-  close: () => set({ isOpen: false }),
+	close: () => set({ isOpen: false }),
 }));

@@ -9,20 +9,20 @@ import { InitializeHooks } from "@/providers/InitializeHooks";
 import { Dialogs } from "./dialogs";
 
 export default async function HomeLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ConvexClientProvider>
-      <HomeProvider>
-        <Dialogs />
-        <InitializeHooks />
-        <div className="relative h-screen overflow-hidden">
-          <Header />
-          <div className="flex h-full w-full">
-            <LeftSidebar />
-            <main className="min-w-0 flex-1">{children}</main>
-            <RightSidebar />
-          </div>
-        </div>
-      </HomeProvider>
-    </ConvexClientProvider>
-  );
+	return (
+		<ConvexClientProvider>
+			<HomeProvider>
+				<Dialogs />
+				<InitializeHooks />
+				<div className="relative h-screen overflow-hidden">
+					<Header />
+					<div className="flex h-full w-full">
+						<LeftSidebar />
+						<main className="min-w-0 flex-1">{children}</main>
+						<RightSidebar />
+					</div>
+				</div>
+			</HomeProvider>
+		</ConvexClientProvider>
+	);
 }

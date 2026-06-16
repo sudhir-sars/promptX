@@ -4,8 +4,8 @@ import { useNavigationMediaSync } from "@/hooks/use-media";
 import { useNavigation } from "@/hooks/use-navigation";
 
 export function InitializeHooks() {
-  useNavigationMediaSync();
-  useNavigation();
+	useNavigationMediaSync();
+	useNavigation();
 
-  return null;
+	return null;
 }

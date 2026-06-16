@@ -20,206 +20,196 @@ const PAGE_SIZE = 10;
 const EMPTY_ARRAY: readonly [] = [];
 
 const EMPTY_CURSOR = {
-  next: null,
-  status: "uninitialized" as const,
+	next: null,
+	status: "uninitialized" as const,
 };
 
 export function usePrompts() {
-  const teamId = useNavigationStore((state) => state.teamId);
+	const teamId = useNavigationStore((state) => state.teamId);
 
-  const selectedPromptId = useNavigationStore((state) => state.promptId);
+	const selectedPromptId = useNavigationStore((state) => state.promptId);
 
-  const promptIds = usePromptsStore((state) =>
-    teamId ? (state.promptIdsByTeam[teamId] ?? EMPTY_ARRAY) : EMPTY_ARRAY,
-  );
+	const promptIds = usePromptsStore((state) => (teamId ? (state.promptIdsByTeam[teamId] ?? EMPTY_ARRAY) : EMPTY_ARRAY));
 
-  const promptsById = usePromptsStore((state) => state.promptsById);
+	const promptsById = usePromptsStore((state) => state.promptsById);
 
-  const prompts = useMemo(
-    () => promptIds.map((id) => promptsById[id]).filter(Boolean),
-    [promptIds, promptsById],
-  );
+	const prompts = useMemo(() => promptIds.map((id) => promptsById[id]).filter(Boolean), [promptIds, promptsById]);
 
-  const prompt = useMemo(
-    () => (selectedPromptId ? (promptsById[selectedPromptId] ?? null) : null),
-    [selectedPromptId, promptsById],
-  );
+	const prompt = useMemo(
+		() => (selectedPromptId ? (promptsById[selectedPromptId] ?? null) : null),
+		[selectedPromptId, promptsById],
+	);
 
-  const cursor = usePromptsStore((state) =>
-    teamId ? (state.cursorByTeam[teamId] ?? EMPTY_CURSOR) : EMPTY_CURSOR,
-  );
+	const cursor = usePromptsStore((state) => (teamId ? (state.cursorByTeam[teamId] ?? EMPTY_CURSOR) : EMPTY_CURSOR));
 
-  const { ref, entry } = useIntersection({
-    threshold: 0,
-  });
+	const { ref, entry } = useIntersection({
+		threshold: 0,
+	});
 
-  const loadPrompts = async () => {
-    if (!teamId) return;
+	const loadPrompts = async () => {
+		if (!teamId) return;
 
-    const store = usePromptsStore.getState();
-    const currentCursor = store.cursorByTeam[teamId] ?? EMPTY_CURSOR;
+		const store = usePromptsStore.getState();
+		const currentCursor = store.cursorByTeam[teamId] ?? EMPTY_CURSOR;
 
-    if (
-      currentCursor.status === "loading" ||
-      currentCursor.status === "loading-more" ||
-      currentCursor.status === "error" ||
-      currentCursor.status === "exhausted"
-    ) {
-      return;
-    }
+		if (
+			currentCursor.status === "loading" ||
+			currentCursor.status === "loading-more" ||
+			currentCursor.status === "error" ||
+			currentCursor.status === "exhausted"
+		) {
+			return;
+		}
 
-    const status = currentCursor.status === "uninitialized" ? "loading" : "loading-more";
+		const status = currentCursor.status === "uninitialized" ? "loading" : "loading-more";
 
-    store.setCursor(teamId, { ...currentCursor, status });
+		store.setCursor(teamId, { ...currentCursor, status });
 
-    try {
-      const result = await db.query(api.prompts.listPrompts, {
-        teamId,
+		try {
+			const result = await db.query(api.prompts.listPrompts, {
+				teamId,
 
-        paginationOpts: {
-          cursor: currentCursor.next,
-          numItems: PAGE_SIZE,
-        },
-      });
+				paginationOpts: {
+					cursor: currentCursor.next,
+					numItems: PAGE_SIZE,
+				},
+			});
 
-      usePromptsStore.getState().cache(teamId, result.page);
+			usePromptsStore.getState().cache(teamId, result.page);
 
-      usePromptsStore.getState().setCursor(teamId, {
-        next: result.continueCursor,
-        status: result.isDone ? "exhausted" : "loaded",
-      });
-    } catch (error) {
-      usePromptsStore.getState().setCursor(teamId, {
-        ...(usePromptsStore.getState().cursorByTeam[teamId] ?? { next: null }),
-        status: "error",
-      });
+			usePromptsStore.getState().setCursor(teamId, {
+				next: result.continueCursor,
+				status: result.isDone ? "exhausted" : "loaded",
+			});
+		} catch (error) {
+			usePromptsStore.getState().setCursor(teamId, {
+				...(usePromptsStore.getState().cursorByTeam[teamId] ?? { next: null }),
+				status: "error",
+			});
 
-      consumeError(error);
-    }
-  };
+			consumeError(error);
+		}
+	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: loadVersions reads store via getState(), not reactive state
+	useEffect(() => {
+		if (!teamId) return;
 
-  useEffect(() => {
-    if (!teamId) return;
+		const shouldLoadInitial = cursor.status === "uninitialized";
 
-    const shouldLoadInitial = cursor.status === "uninitialized";
+		const shouldLoadMore = cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
 
-    const shouldLoadMore = cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
+		if (!shouldLoadInitial && !shouldLoadMore) {
+			return;
+		}
 
-    if (!shouldLoadInitial && !shouldLoadMore) {
-      return;
-    }
+		void loadPrompts();
+	}, [teamId, cursor.status, cursor.next, entry?.isIntersecting]);
 
-    void loadPrompts();
-  }, [teamId, cursor.status, cursor.next, entry?.isIntersecting, loadPrompts]);
+	const createPrompt = async (args: Omit<CreatePromptArgs, "teamId">) => {
+		if (!teamId) return null;
 
-  const createPrompt = async (args: Omit<CreatePromptArgs, "teamId">) => {
-    if (!teamId) return null;
+		try {
+			const prompt = await db.mutation(api.prompts.createPrompt, {
+				...args,
+				teamId,
+			});
 
-    try {
-      const prompt = await db.mutation(api.prompts.createPrompt, {
-        ...args,
-        teamId,
-      });
+			usePromptsStore.getState().cache(teamId, [prompt]);
 
-      usePromptsStore.getState().cache(teamId, [prompt]);
+			// Prepend to list
+			usePromptsStore.setState((state) => ({
+				promptIdsByTeam: {
+					...state.promptIdsByTeam,
 
-      // Prepend to list
-      usePromptsStore.setState((state) => ({
-        promptIdsByTeam: {
-          ...state.promptIdsByTeam,
+					[teamId]: [prompt._id, ...(state.promptIdsByTeam[teamId] ?? []).filter((id) => id !== prompt._id)],
+				},
+			}));
 
-          [teamId]: [
-            prompt._id,
-            ...(state.promptIdsByTeam[teamId] ?? []).filter((id) => id !== prompt._id),
-          ],
-        },
-      }));
+			// Cross-store: increment team prompt count
+			const { useTeamsStore } = await import("@/stores/data-store/teams");
+			const team = useTeamsStore.getState().teamsById[teamId];
+			if (team) {
+				useTeamsStore.getState().update(teamId, {
+					meta: {
+						...team.meta,
+						promptCount: team.meta.promptCount + 1,
+					},
+				});
+			}
 
-      // Cross-store: increment team prompt count
-      const { useTeamsStore } = await import("@/stores/data-store/teams");
-      const team = useTeamsStore.getState().teamsById[teamId];
-      if (team) {
-        useTeamsStore.getState().update(teamId, {
-          meta: {
-            ...team.meta,
-            promptCount: team.meta.promptCount + 1,
-          },
-        });
-      }
+			return prompt;
+		} catch (error) {
+			consumeError(error);
 
-      return prompt;
-    } catch (error) {
-      consumeError(error);
+			return null;
+		}
+	};
 
-      return null;
-    }
-  };
+	const renamePrompt = async (name: string) => {
+		if (!prompt) return null;
 
-  const renamePrompt = async (name: string) => {
-    if (!prompt) return null;
+		try {
+			await db.mutation(api.prompts.updatePrompt, {
+				promptId: prompt._id,
+				name,
+			});
 
-    try {
-      await db.mutation(api.prompts.updatePrompt, {
-        promptId: prompt._id,
-        name,
-      });
+			usePromptsStore.getState().update(prompt._id, { name });
 
-      usePromptsStore.getState().update(prompt._id, { name });
+			return null;
+		} catch (error) {
+			consumeError(error);
 
-      return null;
-    } catch (error) {
-      consumeError(error);
+			return null;
+		}
+	};
 
-      return null;
-    }
-  };
+	const deletePrompt = async (promptId: Id<"prompts">) => {
+		if (!teamId) return;
 
-  const deletePrompt = async (promptId: Id<"prompts">) => {
-    if (!teamId) return;
+		try {
+			await db.mutation(api.prompts.deletePrompt, { promptId });
 
-    try {
-      await db.mutation(api.prompts.deletePrompt, { promptId });
+			usePromptsStore.getState().remove(teamId, [promptId]);
 
-      usePromptsStore.getState().remove(teamId, [promptId]);
+			// Cross-store cascade: clean versions + deployments
+			const { useVersionsStore } = await import("@/stores/data-store/versions");
+			const { useDeploymentsStore } = await import("@/stores/data-store/deployments");
 
-      // Cross-store cascade: clean versions + deployments
-      const { useVersionsStore } = await import("@/stores/data-store/versions");
-      const { useDeploymentsStore } = await import("@/stores/data-store/deployments");
+			useVersionsStore.getState().removeByScope(promptId);
+			useDeploymentsStore.getState().removeByScope(promptId);
 
-      useVersionsStore.getState().removeByScope(promptId);
-      useDeploymentsStore.getState().removeByScope(promptId);
+			// Cross-store: decrement team prompt count
+			const { useTeamsStore } = await import("@/stores/data-store/teams");
+			const team = useTeamsStore.getState().teamsById[teamId];
+			if (team) {
+				useTeamsStore.getState().update(teamId, {
+					meta: {
+						...team.meta,
+						promptCount: Math.max(0, team.meta.promptCount - 1),
+					},
+				});
+			}
+		} catch (error) {
+			consumeError(error);
+		}
+	};
 
-      // Cross-store: decrement team prompt count
-      const { useTeamsStore } = await import("@/stores/data-store/teams");
-      const team = useTeamsStore.getState().teamsById[teamId];
-      if (team) {
-        useTeamsStore.getState().update(teamId, {
-          meta: {
-            ...team.meta,
-            promptCount: Math.max(0, team.meta.promptCount - 1),
-          },
-        });
-      }
-    } catch (error) {
-      consumeError(error);
-    }
-  };
+	return {
+		prompt,
+		prompts,
 
-  return {
-    prompt,
-    prompts,
+		cursor,
+		status: cursor.status,
 
-    cursor,
-    status: cursor.status,
+		loadPrompts,
 
-    loadPrompts,
+		createPrompt,
+		renamePrompt,
+		deletePrompt,
 
-    createPrompt,
-    renamePrompt,
-    deletePrompt,
-
-    loadMoreRef: ref,
-    hasMore: !!cursor.next,
-    hasPrompts: prompts.length > 0,
-  };
+		loadMoreRef: ref,
+		hasMore: !!cursor.next,
+		hasPrompts: prompts.length > 0,
+	};
 }

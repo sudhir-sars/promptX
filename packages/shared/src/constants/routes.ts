@@ -10,5 +10,5 @@ export const SESSION_HEADER = "x-promptx-session-id";
 
 /** Build the path for a single prompt resource. */
 export function promptResourcePath(identifier: string): string {
-  return `${PROMPTS_BASE_PATH}/${encodeURIComponent(identifier)}`;
+	return `${PROMPTS_BASE_PATH}/${encodeURIComponent(identifier)}`;
 }

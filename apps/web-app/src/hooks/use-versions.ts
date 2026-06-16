@@ -13,266 +13,232 @@ import { useStudioStore } from "@/stores/prompt-editor-store";
 
 export type CreateVersionArgs = FunctionArgs<typeof api.versions.createVersion>;
 export type UpdateVersionArgs = FunctionArgs<typeof api.versions.updateVersion>;
-export type CreateVersionResult = FunctionReturnType<
-  typeof api.versions.createVersion
->;
+export type CreateVersionResult = FunctionReturnType<typeof api.versions.createVersion>;
 
 const PAGE_SIZE = 10;
 
 const EMPTY_ARRAY: readonly [] = [];
 
 const EMPTY_CURSOR = {
-  next: null,
-  status: "uninitialized" as const,
+	next: null,
+	status: "uninitialized" as const,
 };
 
 export function useVersions() {
-  const promptId = useNavigationStore((state) => state.promptId);
+	const promptId = useNavigationStore((state) => state.promptId);
 
-  const selectedVersionId = useStudioStore((state) => state.selectedVersion);
+	const selectedVersionId = useStudioStore((state) => state.selectedVersion);
 
-  const versionIds = useVersionsStore((state) =>
-    promptId
-      ? (state.versionIdsByPrompt[promptId] ?? EMPTY_ARRAY)
-      : EMPTY_ARRAY,
-  );
+	const versionIds = useVersionsStore((state) =>
+		promptId ? (state.versionIdsByPrompt[promptId] ?? EMPTY_ARRAY) : EMPTY_ARRAY,
+	);
 
-  const versionsById = useVersionsStore((state) => state.versionsById);
+	const versionsById = useVersionsStore((state) => state.versionsById);
 
-  const versions = useMemo(
-    () => versionIds.map((id) => versionsById[id]).filter(Boolean),
-    [versionIds, versionsById],
-  );
+	const versions = useMemo(() => versionIds.map((id) => versionsById[id]).filter(Boolean), [versionIds, versionsById]);
 
-  const cursor = useVersionsStore((state) =>
-    promptId ? (state.cursorByPrompt[promptId] ?? EMPTY_CURSOR) : EMPTY_CURSOR,
-  );
+	const cursor = useVersionsStore((state) =>
+		promptId ? (state.cursorByPrompt[promptId] ?? EMPTY_CURSOR) : EMPTY_CURSOR,
+	);
 
-  const { ref, entry } = useIntersection({
-    threshold: 0,
-  });
+	const { ref, entry } = useIntersection({
+		threshold: 0,
+	});
 
-  const updateVersionRemote = async (args: UpdateVersionArgs) => {
-    try {
-      await db.mutation(api.versions.updateVersion, args);
-    } catch (error) {
-      consumeError(error);
-    }
-  };
+	const updateVersionRemote = async (args: UpdateVersionArgs) => {
+		try {
+			await db.mutation(api.versions.updateVersion, args);
+		} catch (error) {
+			consumeError(error);
+		}
+	};
 
-  const updateVersionDebounced = useDebouncedCallback(
-    updateVersionRemote,
-    2375,
-  );
+	const updateVersionDebounced = useDebouncedCallback(updateVersionRemote, 2375);
 
-  useEffect(() => {
-    return () => {
-      updateVersionDebounced.flush();
-    };
-  }, [updateVersionDebounced]);
+	useEffect(() => {
+		return () => {
+			updateVersionDebounced.flush();
+		};
+	}, [updateVersionDebounced]);
 
-  const loadVersions = async () => {
-    if (!promptId) return;
+	const loadVersions = async () => {
+		if (!promptId) return;
 
-    const store = useVersionsStore.getState();
-    const currentCursor = store.cursorByPrompt[promptId] ?? EMPTY_CURSOR;
+		const store = useVersionsStore.getState();
+		const currentCursor = store.cursorByPrompt[promptId] ?? EMPTY_CURSOR;
 
-    if (
-      currentCursor.status === "loading" ||
-      currentCursor.status === "loading-more" ||
-      currentCursor.status === "error" ||
-      currentCursor.status === "exhausted"
-    ) {
-      return;
-    }
+		if (
+			currentCursor.status === "loading" ||
+			currentCursor.status === "loading-more" ||
+			currentCursor.status === "error" ||
+			currentCursor.status === "exhausted"
+		) {
+			return;
+		}
 
-    const status =
-      currentCursor.status === "uninitialized" ? "loading" : "loading-more";
+		const status = currentCursor.status === "uninitialized" ? "loading" : "loading-more";
 
-    store.setCursor(promptId, { ...currentCursor, status });
+		store.setCursor(promptId, { ...currentCursor, status });
 
-    try {
-      const result = await db.query(api.versions.listVersions, {
-        promptId,
+		try {
+			const result = await db.query(api.versions.listVersions, {
+				promptId,
 
-        paginationOpts: {
-          cursor: currentCursor.next,
-          numItems: PAGE_SIZE,
-        },
-      });
+				paginationOpts: {
+					cursor: currentCursor.next,
+					numItems: PAGE_SIZE,
+				},
+			});
 
-      useVersionsStore.getState().cache(promptId, result.page);
+			useVersionsStore.getState().cache(promptId, result.page);
 
-      useVersionsStore.getState().setCursor(promptId, {
-        next: result.continueCursor,
-        status: result.isDone ? "exhausted" : "loaded",
-      });
-    } catch (error) {
-      useVersionsStore.getState().setCursor(promptId, {
-        ...(useVersionsStore.getState().cursorByPrompt[promptId] ?? {
-          next: null,
-        }),
-        status: "error",
-      });
+			useVersionsStore.getState().setCursor(promptId, {
+				next: result.continueCursor,
+				status: result.isDone ? "exhausted" : "loaded",
+			});
+		} catch (error) {
+			useVersionsStore.getState().setCursor(promptId, {
+				...(useVersionsStore.getState().cursorByPrompt[promptId] ?? {
+					next: null,
+				}),
+				status: "error",
+			});
 
-      consumeError(error);
-    }
-  };
+			consumeError(error);
+		}
+	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: loadVersions reads store via getState(), not reactive state
+	useEffect(() => {
+		if (!promptId) return;
 
-  useEffect(() => {
-    if (!promptId) return;
+		const shouldLoadInitial = cursor.status === "uninitialized";
 
-    const shouldLoadInitial = cursor.status === "uninitialized";
+		const shouldLoadMore = cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
 
-    const shouldLoadMore =
-      cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
+		if (!shouldLoadInitial && !shouldLoadMore) {
+			return;
+		}
 
-    if (!shouldLoadInitial && !shouldLoadMore) {
-      return;
-    }
+		void loadVersions();
+	}, [promptId, cursor.status, cursor.next, entry?.isIntersecting]);
 
-    void loadVersions();
-  }, [
-    promptId,
-    cursor.status,
-    cursor.next,
-    entry?.isIntersecting,
-    loadVersions,
-  ]);
+	const versionId = selectedVersionId ?? versions[0]?._id;
 
-  const versionId = selectedVersionId ?? versions[0]?._id;
+	const version = useMemo(() => (versionId ? (versionsById[versionId] ?? null) : null), [versionId, versionsById]);
 
-  const version = useMemo(
-    () => (versionId ? (versionsById[versionId] ?? null) : null),
-    [versionId, versionsById],
-  );
+	const createVersion = async (args: Omit<CreateVersionArgs, "promptId">) => {
+		if (!promptId) return;
 
-  const createVersion = async (args: Omit<CreateVersionArgs, "promptId">) => {
-    if (!promptId) return;
+		updateVersionDebounced.cancel();
 
-    updateVersionDebounced.cancel();
+		try {
+			const { newDraft, versionId } = await db.mutation(api.versions.createVersion, {
+				...args,
+				promptId,
+			});
 
-    try {
-      const { newDraft, versionId } = await db.mutation(
-        api.versions.createVersion,
-        {
-          ...args,
-          promptId,
-        },
-      );
+			const store = useVersionsStore.getState();
 
-      const store = useVersionsStore.getState();
+			// Cache the new draft
+			useVersionsStore.getState().cache(promptId, [newDraft]);
 
-      // Cache the new draft
-      useVersionsStore.getState().cache(promptId, [newDraft]);
+			// Prepend new draft to list
+			useVersionsStore.setState((state) => ({
+				versionIdsByPrompt: {
+					...state.versionIdsByPrompt,
 
-      // Prepend new draft to list
-      useVersionsStore.setState((state) => ({
-        versionIdsByPrompt: {
-          ...state.versionIdsByPrompt,
+					[promptId]: [newDraft._id, ...(state.versionIdsByPrompt[promptId] ?? []).filter((id) => id !== newDraft._id)],
+				},
+			}));
 
-          [promptId]: [
-            newDraft._id,
-            ...(state.versionIdsByPrompt[promptId] ?? []).filter(
-              (id) => id !== newDraft._id,
-            ),
-          ],
-        },
-      }));
+			// Mark the released version as non-draft
+			if (store.versionsById[versionId]) {
+				useVersionsStore.getState().update(versionId, {
+					draft: false,
+					content: args.content,
+					updatedAt: Date.now(),
+				});
+			}
+		} catch (error) {
+			consumeError(error);
+		}
+	};
 
-      // Mark the released version as non-draft
-      if (store.versionsById[versionId]) {
-        useVersionsStore.getState().update(versionId, {
-          draft: false,
-          content: args.content,
-          updatedAt: Date.now(),
-        });
-      }
-    } catch (error) {
-      consumeError(error);
-    }
-  };
+	const updateContent = (content: string) => {
+		if (!versionId) return;
 
-  const updateContent = (content: string) => {
-    if (!versionId) return;
+		// Optimistic update in store
+		useVersionsStore.getState().update(versionId, {
+			content,
+			updatedAt: Date.now(),
+		});
 
-    // Optimistic update in store
-    useVersionsStore.getState().update(versionId, {
-      content,
-      updatedAt: Date.now(),
-    });
+		// Debounced remote save
+		updateVersionDebounced({ versionId, content });
+	};
 
-    // Debounced remote save
-    updateVersionDebounced({ versionId, content });
-  };
+	const updateTag = (tag: string) => {
+		if (!versionId) return;
 
-  const updateTag = (tag: string) => {
-    if (!versionId) return;
+		// Optimistic update in store
+		useVersionsStore.getState().update(versionId, {
+			tag,
+			updatedAt: Date.now(),
+		});
 
-    // Optimistic update in store
-    useVersionsStore.getState().update(versionId, {
-      tag,
-      updatedAt: Date.now(),
-    });
+		// Debounced remote save
+		updateVersionDebounced({ versionId, tag });
+	};
 
-    // Debounced remote save
-    updateVersionDebounced({ versionId, tag });
-  };
+	const setTag = async (versionId: Id<"versions">, tag: string) => {
+		const trimmed = tag.trim();
+		const previous = useVersionsStore.getState().versionsById[versionId]?.tag;
 
-  const setTag = async (versionId: Id<"versions">, tag: string) => {
-    const trimmed = tag.trim();
-    const previous = useVersionsStore.getState().versionsById[versionId]?.tag;
+		// Optimistic update in store (cast: clearing sets `tag` to undefined,
+		// which exactOptionalPropertyTypes disallows on the literal).
+		useVersionsStore.getState().update(versionId, {
+			tag: trimmed,
+			updatedAt: Date.now(),
+		});
 
-    // Optimistic update in store (cast: clearing sets `tag` to undefined,
-    // which exactOptionalPropertyTypes disallows on the literal).
-    useVersionsStore.getState().update(versionId, {
-      tag: trimmed,
-      updatedAt: Date.now(),
-    });
+		try {
+			// Omitting `tag` clears it server-side (handler patches `undefined`).
+			await db.mutation(api.versions.setVersionTag, trimmed ? { versionId, tag: trimmed } : { versionId });
+		} catch (error) {
+			// Revert optimistic update on failure
+			useVersionsStore.getState().update(versionId, { tag: previous } as Partial<Doc<"versions">>);
 
-    try {
-      // Omitting `tag` clears it server-side (handler patches `undefined`).
-      await db.mutation(
-        api.versions.setVersionTag,
-        trimmed ? { versionId, tag: trimmed } : { versionId },
-      );
-    } catch (error) {
-      // Revert optimistic update on failure
-      useVersionsStore
-        .getState()
-        .update(versionId, { tag: previous } as Partial<Doc<"versions">>);
+			consumeError(error);
+		}
+	};
 
-      consumeError(error);
-    }
-  };
+	const setSelectedVersion = (versionId: Id<"versions">) => {
+		updateVersionDebounced.flush();
 
-  const setSelectedVersion = (versionId: Id<"versions">) => {
-    updateVersionDebounced.flush();
+		useStudioStore.getState().setSelectedVersion(versionId);
+	};
 
-    useStudioStore.getState().setSelectedVersion(versionId);
-  };
+	return {
+		version,
+		versions,
 
-  return {
-    version,
-    versions,
+		cursor,
+		status: cursor.status,
 
-    cursor,
-    status: cursor.status,
+		createVersion,
 
-    createVersion,
+		updateContent,
+		updateTag,
+		setTag,
 
-    updateContent,
-    updateTag,
-    setTag,
+		setSelectedVersion,
 
-    setSelectedVersion,
+		loadVersions,
 
-    loadVersions,
+		loadMoreRef: ref,
 
-    loadMoreRef: ref,
+		hasMore: !!cursor.next,
 
-    hasMore: !!cursor.next,
-
-    hasVersions: versions.length > 0,
-  };
+		hasVersions: versions.length > 0,
+	};
 }

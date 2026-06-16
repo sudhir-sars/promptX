@@ -1,16 +1,16 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    /* Cloudflare Workers runtime targets the latest baseline. */
-    "target": "ES2024",
-    "lib": ["ES2024"],
-    "jsx": "react-jsx",
-    "allowJs": true,
-    "checkJs": false,
-    "noEmit": true,
-    "allowSyntheticDefaultImports": true,
-    "types": ["./worker-configuration.d.ts"]
-  },
-  "exclude": ["test"],
-  "include": ["worker-configuration.d.ts", "src/**/*.ts"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		/* Cloudflare Workers runtime targets the latest baseline. */
+		"target": "ES2024",
+		"lib": ["ES2024"],
+		"jsx": "react-jsx",
+		"allowJs": true,
+		"checkJs": false,
+		"noEmit": true,
+		"allowSyntheticDefaultImports": true,
+		"types": ["./worker-configuration.d.ts"]
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
 }

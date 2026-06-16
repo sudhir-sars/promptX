@@ -9,13 +9,13 @@ import { RollbackDialog } from "@/components/dialogs/rollback-dialog";
 import { VersionTagDialog } from "@/components/dialogs/version-tag-dialog";
 
 export function Dialogs() {
-  return (
-    <>
-      <DeployDialog />
-      <RollbackDialog />
-      <TeamDialog />
-      <PromptDialog />
-      <VersionTagDialog />
-    </>
-  );
+	return (
+		<>
+			<DeployDialog />
+			<RollbackDialog />
+			<TeamDialog />
+			<PromptDialog />
+			<VersionTagDialog />
+		</>
+	);
 }

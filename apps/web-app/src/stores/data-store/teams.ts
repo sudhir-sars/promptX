@@ -7,89 +7,89 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { CursorState } from "@/types";
 
 type TeamsStore = {
-  teamsById: Record<Id<"teams">, Doc<"teams">>;
+	teamsById: Record<Id<"teams">, Doc<"teams">>;
 
-  teamIds: Id<"teams">[];
+	teamIds: Id<"teams">[];
 
-  cursor: CursorState;
+	cursor: CursorState;
 
-  cache(teams: Doc<"teams">[]): void;
+	cache(teams: Doc<"teams">[]): void;
 
-  remove(ids: Id<"teams">[]): void;
+	remove(ids: Id<"teams">[]): void;
 
-  update(id: Id<"teams">, partial: Partial<Doc<"teams">>): void;
+	update(id: Id<"teams">, partial: Partial<Doc<"teams">>): void;
 
-  setCursor(cursor: CursorState): void;
+	setCursor(cursor: CursorState): void;
 
-  reset(): void;
+	reset(): void;
 };
 
 export const useTeamsStore = create<TeamsStore>((set) => ({
-  teamsById: {},
+	teamsById: {},
 
-  teamIds: [],
+	teamIds: [],
 
-  cursor: {
-    next: null,
-    status: "uninitialized",
-  },
+	cursor: {
+		next: null,
+		status: "uninitialized",
+	},
 
-  cache(teams) {
-    set((state) => ({
-      teamsById: {
-        ...state.teamsById,
+	cache(teams) {
+		set((state) => ({
+			teamsById: {
+				...state.teamsById,
 
-        ...Object.fromEntries(teams.map((team) => [team._id, team])),
-      },
+				...Object.fromEntries(teams.map((team) => [team._id, team])),
+			},
 
-      teamIds: [...new Set([...state.teamIds, ...teams.map((team) => team._id)])],
-    }));
-  },
+			teamIds: [...new Set([...state.teamIds, ...teams.map((team) => team._id)])],
+		}));
+	},
 
-  remove(ids) {
-    set((state) => {
-      const teamsById = { ...state.teamsById };
-      for (const id of ids) {
-        delete teamsById[id];
-      }
+	remove(ids) {
+		set((state) => {
+			const teamsById = { ...state.teamsById };
+			for (const id of ids) {
+				delete teamsById[id];
+			}
 
-      return {
-        teamsById,
+			return {
+				teamsById,
 
-        teamIds: state.teamIds.filter((id) => !ids.includes(id)),
-      };
-    });
-  },
+				teamIds: state.teamIds.filter((id) => !ids.includes(id)),
+			};
+		});
+	},
 
-  update(id, partial) {
-    set((state) => {
-      const team = state.teamsById[id];
-      if (!team) return state;
+	update(id, partial) {
+		set((state) => {
+			const team = state.teamsById[id];
+			if (!team) return state;
 
-      return {
-        teamsById: {
-          ...state.teamsById,
+			return {
+				teamsById: {
+					...state.teamsById,
 
-          [id]: { ...team, ...partial },
-        },
-      };
-    });
-  },
+					[id]: { ...team, ...partial },
+				},
+			};
+		});
+	},
 
-  setCursor(cursor) {
-    set({ cursor });
-  },
+	setCursor(cursor) {
+		set({ cursor });
+	},
 
-  reset() {
-    set({
-      teamsById: {},
+	reset() {
+		set({
+			teamsById: {},
 
-      teamIds: [],
+			teamIds: [],
 
-      cursor: {
-        next: null,
-        status: "uninitialized",
-      },
-    });
-  },
+			cursor: {
+				next: null,
+				status: "uninitialized",
+			},
+		});
+	},
 }));

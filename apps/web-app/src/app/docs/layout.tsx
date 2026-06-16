@@ -6,18 +6,18 @@ import { DocsRightSidebar } from "@/components/docs/sidebar/rightsidebar";
 import { InitializeHooks } from "@/providers/InitializeHooks";
 
 export default function DocsLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="relative h-screen overflow-hidden">
-      <InitializeHooks />
-      <DocsHeader />
+	return (
+		<div className="relative h-screen overflow-hidden">
+			<InitializeHooks />
+			<DocsHeader />
 
-      <div className="flex h-full w-full">
-        <DocsLeftSidebar />
+			<div className="flex h-full w-full">
+				<DocsLeftSidebar />
 
-        <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
+				<main className="min-w-0 flex-1 overflow-hidden">{children}</main>
 
-        <DocsRightSidebar />
-      </div>
-    </div>
-  );
+				<DocsRightSidebar />
+			</div>
+		</div>
+	);
 }

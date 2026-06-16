@@ -8,20 +8,20 @@ import { SocialProof } from "@/components/landing-page/social-proof";
 import { ProductShowcase } from "@/components/landing-page/workflow-section";
 
 export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground ">
-      <LandingNav />
+	return (
+		<div className="min-h-screen bg-background text-foreground ">
+			<LandingNav />
 
-      <main className="">
-        <HeroSection />
-        <ProductShowcase />
-        <FeaturesSection />
-        <BenefitsSection />
-        <SocialProof />
-        <CtaSection />
-      </main>
+			<main className="">
+				<HeroSection />
+				<ProductShowcase />
+				<FeaturesSection />
+				<BenefitsSection />
+				<SocialProof />
+				<CtaSection />
+			</main>
 
-      <LandingFooter />
-    </div>
-  );
+			<LandingFooter />
+		</div>
+	);
 }

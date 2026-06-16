@@ -7,106 +7,104 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { CursorState } from "@/types";
 
 type InvitesStore = {
-  invitesById: Record<Id<"invites">, Doc<"invites">>;
+	invitesById: Record<Id<"invites">, Doc<"invites">>;
 
-  inviteIdsByTeam: Record<Id<"teams">, Id<"invites">[]>;
+	inviteIdsByTeam: Record<Id<"teams">, Id<"invites">[]>;
 
-  cursorByTeam: Record<Id<"teams">, CursorState>;
+	cursorByTeam: Record<Id<"teams">, CursorState>;
 
-  cache(teamId: Id<"teams">, invites: Doc<"invites">[]): void;
+	cache(teamId: Id<"teams">, invites: Doc<"invites">[]): void;
 
-  remove(teamId: Id<"teams">, ids: Id<"invites">[]): void;
+	remove(teamId: Id<"teams">, ids: Id<"invites">[]): void;
 
-  setCursor(teamId: Id<"teams">, cursor: CursorState): void;
+	setCursor(teamId: Id<"teams">, cursor: CursorState): void;
 
-  removeByScope(teamId: Id<"teams">): void;
+	removeByScope(teamId: Id<"teams">): void;
 
-  reset(): void;
+	reset(): void;
 };
 
 export const useInvitesStore = create<InvitesStore>((set) => ({
-  invitesById: {},
+	invitesById: {},
 
-  inviteIdsByTeam: {},
+	inviteIdsByTeam: {},
 
-  cursorByTeam: {},
+	cursorByTeam: {},
 
-  cache(teamId, invites) {
-    set((state) => ({
-      invitesById: {
-        ...state.invitesById,
+	cache(teamId, invites) {
+		set((state) => ({
+			invitesById: {
+				...state.invitesById,
 
-        ...Object.fromEntries(invites.map((invite) => [invite._id, invite])),
-      },
+				...Object.fromEntries(invites.map((invite) => [invite._id, invite])),
+			},
 
-      inviteIdsByTeam: {
-        ...state.inviteIdsByTeam,
+			inviteIdsByTeam: {
+				...state.inviteIdsByTeam,
 
-        [teamId]: [
-          ...invites.map((invite) => invite._id),
+				[teamId]: [
+					...invites.map((invite) => invite._id),
 
-          ...(state.inviteIdsByTeam[teamId] ?? []).filter(
-            (id) => !invites.some((invite) => invite._id === id),
-          ),
-        ],
-      },
-    }));
-  },
+					...(state.inviteIdsByTeam[teamId] ?? []).filter((id) => !invites.some((invite) => invite._id === id)),
+				],
+			},
+		}));
+	},
 
-  remove(teamId, ids) {
-    set((state) => {
-      const invitesById = { ...state.invitesById };
-      for (const id of ids) {
-        delete invitesById[id];
-      }
+	remove(teamId, ids) {
+		set((state) => {
+			const invitesById = { ...state.invitesById };
+			for (const id of ids) {
+				delete invitesById[id];
+			}
 
-      return {
-        invitesById,
+			return {
+				invitesById,
 
-        inviteIdsByTeam: {
-          ...state.inviteIdsByTeam,
+				inviteIdsByTeam: {
+					...state.inviteIdsByTeam,
 
-          [teamId]: (state.inviteIdsByTeam[teamId] ?? []).filter((id) => !ids.includes(id)),
-        },
-      };
-    });
-  },
+					[teamId]: (state.inviteIdsByTeam[teamId] ?? []).filter((id) => !ids.includes(id)),
+				},
+			};
+		});
+	},
 
-  setCursor(teamId, cursor) {
-    set((state) => ({
-      cursorByTeam: {
-        ...state.cursorByTeam,
+	setCursor(teamId, cursor) {
+		set((state) => ({
+			cursorByTeam: {
+				...state.cursorByTeam,
 
-        [teamId]: cursor,
-      },
-    }));
-  },
+				[teamId]: cursor,
+			},
+		}));
+	},
 
-  removeByScope(teamId) {
-    set((state) => {
-      const inviteIds = state.inviteIdsByTeam[teamId] ?? [];
+	removeByScope(teamId) {
+		set((state) => {
+			const inviteIds = state.inviteIdsByTeam[teamId] ?? [];
 
-      const invitesById = { ...state.invitesById };
-      for (const id of inviteIds) {
-        delete invitesById[id];
-      }
+			const invitesById = { ...state.invitesById };
+			for (const id of inviteIds) {
+				delete invitesById[id];
+			}
 
-      const inviteIdsByTeam = { ...state.inviteIdsByTeam };
-      const cursorByTeam = { ...state.cursorByTeam };
-      delete inviteIdsByTeam[teamId];
-      delete cursorByTeam[teamId];
+			const inviteIdsByTeam = { ...state.inviteIdsByTeam };
+			const cursorByTeam = { ...state.cursorByTeam };
+			delete inviteIdsByTeam[teamId];
+			delete cursorByTeam[teamId];
 
-      return { invitesById, inviteIdsByTeam, cursorByTeam };
-    });
-  },
+			return { invitesById, inviteIdsByTeam, cursorByTeam };
+		});
+	},
 
-  reset() {
-    set({
-      invitesById: {},
+	reset() {
+		set({
+			invitesById: {},
 
-      inviteIdsByTeam: {},
+			inviteIdsByTeam: {},
 
-      cursorByTeam: {},
-    });
-  },
+			cursorByTeam: {},
+		});
+	},
 }));

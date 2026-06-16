@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+	return twMerge(clsx(inputs));
 }
 
 /**
@@ -10,5 +10,5 @@ export function cn(...inputs: ClassValue[]) {
  * logic in `convex/prompts.ts` so the live preview matches the stored value.
  */
 export function slugify(name: string) {
-  return name.toLowerCase().replace(/ /g, "-");
+	return name.toLowerCase().replace(/ /g, "-");
 }

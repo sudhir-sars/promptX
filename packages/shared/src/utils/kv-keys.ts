@@ -7,9 +7,9 @@ import type { ApiKeyKVKey, PromptKVKey } from "../contracts/kv-storage";
  */
 
 export function promptKvKey(teamId: string, identifier: string): PromptKVKey {
-  return `prompt:${teamId}:${identifier}`;
+	return `prompt:${teamId}:${identifier}`;
 }
 
 export function apiKeysKvKey(teamId: string): ApiKeyKVKey {
-  return `team:${teamId}:apikeys`;
+	return `team:${teamId}:apikeys`;
 }
