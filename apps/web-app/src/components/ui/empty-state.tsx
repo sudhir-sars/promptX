@@ -9,8 +9,14 @@ type EmptyStateVariant = "team" | "prompt" | "version" | "activity";
 type EmptyStateMode = "default" | "compact";
 
 interface EmptyStateProps {
-	variant: EmptyStateVariant;
+	variant?: EmptyStateVariant;
+
+	title?: string;
+	description?: string;
+
 	action?: () => void;
+	actionLabel?: string;
+
 	mode?: EmptyStateMode;
 }
 
@@ -50,35 +56,37 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateVariant, EmptyStateConfig> = {
 		icon: PromptIcon,
 	},
 };
+export function EmptyState({ variant, title, description, action, actionLabel, mode = "default" }: EmptyStateProps) {
+	const config = variant ? EMPTY_STATE_CONFIG[variant] : undefined;
 
-export function EmptyState({ variant, action, mode = "default" }: EmptyStateProps) {
-	const config = EMPTY_STATE_CONFIG[variant];
-	const Icon = config.icon;
+	const Icon = config?.icon ?? PromptIcon;
+
+	const finalTitle = title ?? config?.title ?? "Nothing here yet";
+
+	const finalDescription = description ?? config?.description ?? "No content available.";
 
 	if (mode === "compact") {
 		return (
 			<div className="flex h-full w-full items-center justify-center">
-				<p className="text-sm text-muted-foreground">{config.title}</p>
+				<p className="text-sm text-muted-foreground">{finalTitle}</p>
 			</div>
 		);
 	}
 
-	const showAction = action && (variant === "team" || variant === "prompt");
-
 	return (
 		<div className="flex h-full w-full items-center justify-center px-6">
 			<div className="flex max-w-sm flex-col items-center text-center">
-				<div className="flex size-14 items-center justify-center rounded-2xl border bg-background">
-					<Icon animate={false} className="size-6 text-muted-foreground" />
+				<div className="flex size-14 items-center justify-center">
+					<Icon animate={false} size={32} className="size-10 text-muted-foreground" />
 				</div>
 
-				<h2 className="mt-5 text-base font-medium">{config.title}</h2>
+				<h2 className="mt-5 text-base font-medium">{finalTitle}</h2>
 
-				<p className="mt-2 text-sm leading-6 text-muted-foreground">{config.description}</p>
+				<p className="mt-2 text-sm leading-6 text-muted-foreground">{finalDescription}</p>
 
-				{showAction && (
+				{action && (
 					<Button variant="outline" className="mt-6 rounded-full px-10 text-xs" onClick={action}>
-						Create {variant === "team" ? "Team" : "Prompt"}
+						{actionLabel ?? "Create"}
 					</Button>
 				)}
 			</div>

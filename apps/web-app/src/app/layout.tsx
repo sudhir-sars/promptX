@@ -26,24 +26,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
 	return (
-		<html lang="en" className={cn("antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}>
-			<ClerkProvider>
-				<body className="min-h-full flex flex-col bg-background relative">
-					{/* Content sits above orbs */}
+		<html
+			lang="en"
+			suppressHydrationWarning
+			className={cn("antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+		>
+			<body className="min-h-full flex flex-col bg-background relative">
+				<ClerkProvider>
 					<div className="relative z-10 flex flex-col min-h-screen">
-						<ThemeProvider
-							attribute="class"
-							defaultTheme="dark"
-							forcedTheme="dark"
-							enableSystem
-							disableTransitionOnChange
-						>
+						<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
 							<Toaster />
 							{children}
 						</ThemeProvider>
 					</div>
-				</body>
-			</ClerkProvider>
+				</ClerkProvider>
+			</body>
 		</html>
 	);
 }

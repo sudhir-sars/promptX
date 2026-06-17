@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { badRequest } from "./errors";
 
-const DEFAULT_FROM = "PromptX <team@resend.dev>";
+const DEFAULT_FROM = "PromptX <team@sudhirx.dev>";
 const resend = new Resend(process.env["RESEND_API_KEY"]!);
 
 export async function sendEmail(args: { to: string; subject: string; reactComp: React.ReactElement; from?: string }) {
