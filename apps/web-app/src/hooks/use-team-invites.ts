@@ -3,6 +3,7 @@
 import type { FunctionArgs } from "convex/server";
 import { useMemo } from "react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { db } from "@/lib/convex/client";
 import { consumeError } from "@/lib/errors";
 import { useInvitesStore } from "@/stores/data-store";
@@ -94,6 +95,18 @@ export function useTeamInvites() {
 		}
 	};
 
+	const cancelInvite = async (inviteId: Id<"invites">) => {
+		if (!teamId) return;
+
+		try {
+			await db.mutation(api.teams.invite.cancelInvite, { inviteId });
+
+			useInvitesStore.getState().remove(teamId, [inviteId]);
+		} catch (error) {
+			consumeError(error);
+		}
+	};
+
 	return {
 		invites,
 
@@ -102,5 +115,6 @@ export function useTeamInvites() {
 
 		loadInvites,
 		createInvite,
+		cancelInvite,
 	};
 }
