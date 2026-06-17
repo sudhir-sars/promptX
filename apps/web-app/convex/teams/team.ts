@@ -29,11 +29,10 @@ export const createTeam = authedMutation({
 			teamId,
 			userId: ctx.userId,
 			role: "owner",
-			meta: {
-				avatar: ctx.avatar,
-				email: ctx.email,
-				name: ctx.name,
-			},
+
+			avatar: ctx.avatar,
+			email: ctx.email,
+			name: ctx.name,
 		});
 
 		const { draftVersion, prompt, version } = await createDefaultPrompt(ctx, teamId);

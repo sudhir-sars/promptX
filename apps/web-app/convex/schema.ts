@@ -27,14 +27,10 @@ export default defineSchema({
 	members: defineTable({
 		teamId: v.id("teams"),
 		userId: v.id("users"),
-
 		role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
-
-		meta: v.object({
-			name: v.string(),
-			email: v.string(),
-			avatar: v.string(),
-		}),
+		name: v.string(),
+		email: v.string(),
+		avatar: v.string(),
 	})
 		.index("by_team", ["teamId"])
 		.index("by_user", ["userId"])
@@ -44,12 +40,12 @@ export default defineSchema({
 		teamId: v.id("teams"),
 		email: v.string(),
 		invitedBy: v.id("users"),
-
+		expiresAt: v.number(),
 		code: v.string(),
-
 		role: v.union(v.literal("admin"), v.literal("member")),
 	})
 		.index("by_team", ["teamId"])
+		.index("by_team_email", ["teamId", "email"])
 		.index("by_code", ["code"]),
 
 	prompts: defineTable({
