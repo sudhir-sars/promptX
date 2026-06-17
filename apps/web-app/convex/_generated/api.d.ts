@@ -24,6 +24,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_cascade from "../lib/cascade.js";
 import type * as lib_defaults from "../lib/defaults.js";
 import type * as lib_deployments from "../lib/deployments.js";
+import type * as lib_email from "../lib/email.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_invites from "../lib/invites.js";
 import type * as lib_permissions from "../lib/permissions.js";
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   "lib/cascade": typeof lib_cascade;
   "lib/defaults": typeof lib_defaults;
   "lib/deployments": typeof lib_deployments;
+  "lib/email": typeof lib_email;
   "lib/errors": typeof lib_errors;
   "lib/invites": typeof lib_invites;
   "lib/permissions": typeof lib_permissions;

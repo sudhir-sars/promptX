@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useIntersection } from "@mantine/hooks";
+import { useEffect, useMemo } from "react";
+
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+
 import { db } from "@/lib/convex/client";
 import { consumeError } from "@/lib/errors";
-import { useMembersStore } from "@/stores/data-store";
+
+import { useInvitesStore, useMembersStore, usePromptsStore, useTeamsStore } from "@/stores/data-store";
 import { useNavigationStore } from "@/stores/navigation-store";
 
 const PAGE_SIZE = 10;
@@ -24,14 +28,25 @@ export function useTeamMembers() {
 
 	const membersById = useMembersStore((state) => state.membersById);
 
-	const members = useMemo(() => memberIds.map((id) => membersById[id]).filter(Boolean), [memberIds, membersById]);
+	const members = useMemo(
+		() =>
+			memberIds
+				.map((id) => membersById[id])
+				.filter((member): member is NonNullable<typeof member> => member !== undefined),
+		[memberIds, membersById],
+	);
 
 	const cursor = useMembersStore((state) => (teamId ? (state.cursorByTeam[teamId] ?? EMPTY_CURSOR) : EMPTY_CURSOR));
+
+	const { ref, entry } = useIntersection({
+		threshold: 0,
+	});
 
 	const loadMembers = async () => {
 		if (!teamId) return;
 
 		const store = useMembersStore.getState();
+
 		const currentCursor = store.cursorByTeam[teamId] ?? EMPTY_CURSOR;
 
 		if (
@@ -45,7 +60,10 @@ export function useTeamMembers() {
 
 		const status = currentCursor.status === "uninitialized" ? "loading" : "loading-more";
 
-		store.setCursor(teamId, { ...currentCursor, status });
+		store.setCursor(teamId, {
+			...currentCursor,
+			status,
+		});
 
 		try {
 			const result = await db.query(api.teams.member.listMembers, {
@@ -65,13 +83,30 @@ export function useTeamMembers() {
 			});
 		} catch (error) {
 			useMembersStore.getState().setCursor(teamId, {
-				...(useMembersStore.getState().cursorByTeam[teamId] ?? { next: null }),
+				...(useMembersStore.getState().cursorByTeam[teamId] ?? {
+					next: null,
+				}),
 				status: "error",
 			});
 
 			consumeError(error);
 		}
 	};
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: follows invites pattern
+	useEffect(() => {
+		if (!teamId) return;
+
+		const shouldLoadInitial = cursor.status === "uninitialized";
+
+		const shouldLoadMore = cursor.status === "loaded" && cursor.next && entry?.isIntersecting;
+
+		if (!shouldLoadInitial && !shouldLoadMore) {
+			return;
+		}
+
+		void loadMembers();
+	}, [teamId, cursor.status, cursor.next, entry?.isIntersecting]);
 
 	const updateMemberRole = async (userId: Id<"users">, role: "admin" | "member") => {
 		if (!teamId) return;
@@ -84,7 +119,7 @@ export function useTeamMembers() {
 			});
 
 			const member = Object.values(useMembersStore.getState().membersById).find(
-				(m) => m.teamId === teamId && m.userId === userId,
+				(member) => member.teamId === teamId && member.userId === userId,
 			);
 
 			if (member) {
@@ -105,7 +140,7 @@ export function useTeamMembers() {
 			});
 
 			const member = Object.values(useMembersStore.getState().membersById).find(
-				(m) => m.teamId === teamId && m.userId === userId,
+				(member) => member.teamId === teamId && member.userId === userId,
 			);
 
 			if (member) {
@@ -125,6 +160,10 @@ export function useTeamMembers() {
 			});
 
 			useMembersStore.getState().removeByScope(teamId);
+
+			useTeamsStore.getState().remove([teamId]);
+			usePromptsStore.getState().removeByScope(teamId);
+			useInvitesStore.getState().removeByScope(teamId);
 		} catch (error) {
 			consumeError(error);
 		}
@@ -142,5 +181,9 @@ export function useTeamMembers() {
 		removeMember,
 
 		leaveTeam,
+
+		loadMoreRef: ref,
+		hasMore: !!cursor.next,
+		hasMembers: members.length > 0,
 	};
 }

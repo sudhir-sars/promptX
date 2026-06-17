@@ -25,7 +25,7 @@ export const createTeam = authedMutation({
 			},
 		});
 
-		await ctx.db.insert("members", {
+		const membershipId = await ctx.db.insert("members", {
 			teamId,
 			userId: ctx.userId,
 			role: "owner",
@@ -34,6 +34,8 @@ export const createTeam = authedMutation({
 			email: ctx.email,
 			name: ctx.name,
 		});
+		const membership = await ctx.db.get(membershipId);
+		invariant(membership, "Failed to create team membership");
 
 		const { draftVersion, prompt, version } = await createDefaultPrompt(ctx, teamId);
 
@@ -41,7 +43,7 @@ export const createTeam = authedMutation({
 
 		invariant(team, "Failed to create team");
 
-		return { team, draftVersion, prompt, version };
+		return { team: { ...team, membership }, draftVersion, prompt, version };
 	},
 });
 
@@ -51,13 +53,16 @@ export const getTeam = authedQuery({
 	},
 
 	handler: async (ctx, { teamId }) => {
-		await requireTeamMembership(ctx, teamId);
+		const { membership } = await requireTeamMembership(ctx, teamId);
 
-		const team = await ctx.db.get(teamId);
+		const teamDoc = await ctx.db.get(teamId);
 
-		if (!team) notFound("Team");
+		if (!teamDoc) notFound("Team");
 
-		return team;
+		return {
+			...teamDoc,
+			membership,
+		};
 	},
 });
 
@@ -66,12 +71,34 @@ export const listTeams = authedQuery({
 		paginationOpts: paginationOptsValidator,
 	},
 
+	// Lists every team the user belongs to (owner, admin, or member), not just
+	// the ones they own. Pagination runs over the user's memberships, then each
+	// membership is resolved to its team document.
 	handler: async (ctx, { paginationOpts }) => {
-		return await ctx.db
-			.query("teams")
-			.withIndex("by_owner", (q) => q.eq("ownerId", ctx.userId))
+		const memberships = await ctx.db
+			.query("members")
+			.withIndex("by_user", (q) => q.eq("userId", ctx.userId))
 			.order("desc")
 			.paginate(paginationOpts);
+
+		const page = await Promise.all(
+			memberships.page.map(async (membership) => {
+				const team = await ctx.db.get(membership.teamId);
+
+				if (!team) return null;
+
+				return {
+					...team,
+					membership: membership,
+				};
+			}),
+		);
+
+		return {
+			continueCursor: memberships.continueCursor,
+			isDone: memberships.isDone,
+			page: page.filter((team) => team !== null),
+		};
 	},
 });
 
@@ -133,6 +160,7 @@ export const transferOwnership = authedMutation({
 		return teamId;
 	},
 });
+
 export const deleteTeam = authedMutation({
 	args: {
 		teamId: v.id("teams"),

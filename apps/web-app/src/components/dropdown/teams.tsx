@@ -11,7 +11,11 @@ import { useTeams } from "@/hooks/use-team";
 import { useNavigationStore } from "@/stores/navigation-store";
 import { useTeamDialogStore } from "@/stores/team-dialog-store";
 
-export function TeamSwitcher() {
+interface TeamSwitcherProps {
+	showCreateButton?: boolean;
+}
+
+export function TeamSwitcher({ showCreateButton = true }: TeamSwitcherProps) {
 	const router = useRouter();
 
 	const openCreate = useTeamDialogStore((state) => state.openCreate);
@@ -39,7 +43,7 @@ export function TeamSwitcher() {
 			<PopoverContent
 				align="start"
 				sideOffset={6}
-				className="w-[260px] rounded-[22px] bg-background/80 p-0 backdrop-blur-2xl gap-0"
+				className="w-[230px] rounded-[22px] bg-background/80 p-0 backdrop-blur-2xl gap-0"
 			>
 				<div className="max-h-[240px] overflow-y-auto p-1 no-scrollbar">
 					{status === "uninitialized" || (status === "loading" && teams.length === 0) ? (
@@ -91,18 +95,20 @@ export function TeamSwitcher() {
 					)}
 				</div>
 
-				<div className="rounded-b-[22px] border-t bg-background p-1">
-					<Button
-						variant="ghost"
-						onClick={openCreate}
-						className="w-full justify-center rounded-full text-[12.5px] font-normal"
-					>
-						<span className="flex items-center gap-2 pr-5">
-							<PlusIcon className="size-4" />
-							<span>Create Team</span>
-						</span>
-					</Button>
-				</div>
+				{showCreateButton && (
+					<div className="rounded-b-[22px] border-t bg-background p-1">
+						<Button
+							variant="ghost"
+							onClick={openCreate}
+							className="w-full justify-center rounded-full text-[12.5px] font-normal"
+						>
+							<span className="flex items-center gap-2 pr-5">
+								<PlusIcon className="size-4" />
+								<span>Create Team</span>
+							</span>
+						</Button>
+					</div>
+				)}
 			</PopoverContent>
 		</Popover>
 	);
