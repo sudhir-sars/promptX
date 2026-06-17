@@ -40,7 +40,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 				},
 
 				classNames: {
-					toast: "!rounded-[25px] backdrop-blur-xl border border-white/10",
+					toast: "!rounded-[25px] backdrop-blur-2xl border border-white/10",
 					actionButton: "!rounded-full !h-8 !px-4 !font-medium",
 					cancelButton: "!rounded-full !h-8 !px-4",
 					closeButton: "!rounded-full",

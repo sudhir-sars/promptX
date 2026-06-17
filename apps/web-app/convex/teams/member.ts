@@ -1,8 +1,21 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { authedMutation, authedQuery } from "../lib/auth";
 import { badRequest, invariant, notFound } from "../lib/errors";
 import { requireTeamAdmin, requireTeamMembership } from "../lib/permissions";
+
+export const getMyMembership = authedQuery({
+	args: {
+		teamId: v.id("teams"),
+	},
+
+	handler: async (ctx, { teamId }) => {
+		const { membership } = await requireTeamMembership(ctx, teamId);
+
+		return membership;
+	},
+});
 
 export const listMembers = authedQuery({
 	args: {
@@ -39,9 +52,21 @@ export const updateMemberRole = authedMutation({
 
 		if (targetMember.role === "owner") badRequest("Owner role cannot be modified");
 
-		await ctx.db.patch(targetMember._id, {
-			role,
-		});
+		if (targetMember.role !== role) {
+			await ctx.db.patch(targetMember._id, {
+				role,
+			});
+
+			const team = await ctx.db.get(teamId);
+
+			invariant(team, "Team not found");
+
+			await ctx.scheduler.runAfter(0, internal.actions.email.sendRoleChangedEmail, {
+				to: targetMember.email,
+				teamName: team.name,
+				role,
+			});
+		}
 
 		return targetMember._id;
 	},
@@ -82,6 +107,11 @@ export const removeMember = authedMutation({
 				...team.meta,
 				memberCount: Math.max(0, team.meta.memberCount - 1),
 			},
+		});
+
+		await ctx.scheduler.runAfter(0, internal.actions.email.sendMemberRemovedEmail, {
+			to: targetMembership.email,
+			teamName: team.name,
 		});
 
 		return {

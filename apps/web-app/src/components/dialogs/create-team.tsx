@@ -71,7 +71,7 @@ export function TeamDialog() {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogContent className="rounded-2xl shadow-2xl">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>{mode === "create" ? "Create Team" : "Edit Team"}</DialogTitle>
 

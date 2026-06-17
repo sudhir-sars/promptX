@@ -14,7 +14,7 @@ export default async function HomeLayout({ children }: { children: React.ReactNo
 			<HomeProvider>
 				<Dialogs />
 				<InitializeHooks />
-				<div className="relative h-screen overflow-hidden">
+				<div className="relative h-screen overflow-hidden bg-background">
 					<Header />
 					<div className="flex h-full w-full">
 						<LeftSidebar />

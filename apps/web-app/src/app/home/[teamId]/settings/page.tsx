@@ -1,92 +1,115 @@
 "use client";
 
+import { Page, PageHeader, Section } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { EditIcon, TrashIcon } from "@/components/ui/icons";
+import { ErrorState } from "@/components/ui/error-state";
+import { EditIcon, MembersIcon, TrashIcon } from "@/components/ui/icons";
 
 import { useTeams } from "@/hooks/use-team";
+import { getRelativeTime } from "@/lib/date";
 
+import { confirm } from "@/stores/confirm-dialog-store";
 import { useTeamDialogStore } from "@/stores/team-dialog-store";
 
 export default function SettingsPage() {
-	const { team, deleteTeam } = useTeams();
+	const { team, deleteTeam, membership } = useTeams();
 
 	const { openEdit } = useTeamDialogStore();
 
-	if (!team) {
-		return null;
+	if (!membership || !team) {
+		return <ErrorState message="Unable to load team details. The team may not exist or you may not have access." />;
 	}
 
+	const canManage = membership.role === "owner" || membership.role === "admin";
+
+	const isOwner = membership.role === "owner";
+
+	const handleDelete = async () => {
+		const approved = await confirm({
+			title: "Delete team",
+			description:
+				"This action cannot be undone. All prompts, versions, deployments, members, invitations, and associated data will be permanently removed.",
+			confirmText: "Delete Team",
+			variant: "destructive",
+		});
+
+		if (!approved) {
+			return;
+		}
+
+		await deleteTeam({
+			teamId: team._id,
+		});
+	};
+
 	return (
-		<div className="h-full flex-1 space-y-7 overflow-y-auto no-scrollbar px-6 py-20 md:px-10 lg:px-16 transition-all duration-300 ease-in-out">
-			<div className="mb-8">
-				<h1 className="text-xl font-semibold">Team Settings</h1>
+		<Page>
+			<PageHeader title="Team Settings" description="Manage team details and lifecycle." />
 
-				<p className="mt-1 text-sm text-muted-foreground">Manage team details and lifecycle.</p>
-			</div>
+			{!canManage && (
+				<Section>
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<MembersIcon className="size-4 shrink-0" />
+						<span>You have read-only access to this team.</span>
+					</div>
+				</Section>
+			)}
 
-			<div className="space-y-6">
-				<section className="overflow-hidden rounded-4xl border">
-					<div className="space-y-5 p-5">
-						<div>
-							<div className="flex w-full items-center justify-between">
-								<div className="text-md ">{team.name}</div>
+			<Section>
+				<div className="flex items-start justify-between gap-4">
+					<div className="min-w-0">
+						<h2 className="truncate text-[15px] font-medium capitalize">{team.name}</h2>
 
-								<Button size="sm" variant="outline" onClick={() => openEdit(team._id, team.name)}>
-									<EditIcon />
-									Rename
-								</Button>
-							</div>
-						</div>
+						<div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-0">
+							<span>
+								{team.meta.memberCount} {team.meta.memberCount === 1 ? "Member" : "Members"}
+							</span>
 
-						<div>
-							<div className="text-xs text-muted-foreground">Members</div>
+							<span className="hidden px-2 sm:inline">|</span>
 
-							<p className="mt-1 text-sm font-medium">{team.meta.memberCount}</p>
-						</div>
+							<span>
+								{team.meta.promptCount} {team.meta.promptCount === 1 ? "Prompt" : "Prompts"}
+							</span>
 
-						<div>
-							<div className="text-xs text-muted-foreground">Prompts</div>
+							<span className="hidden px-2 sm:inline">|</span>
 
-							<p className="mt-1 text-sm font-medium">{team.meta.promptCount}</p>
+							<span>Created {getRelativeTime(team._creationTime)}</span>
 						</div>
 					</div>
-				</section>
 
-				<section className="overflow-hidden rounded-4xl space-y-4 border border-destructive/15 p-5">
-					<div>
-						<h2 className="text-sm font-medium text-destructive">Danger Zone</h2>
-					</div>
-
-					<div className="flex flex-col gap-4  md:flex-row md:items-center md:justify-between">
-						<div>
-							<p className="text-sm font-medium">Delete Team</p>
-
-							<p className="mt-1 text-sm text-muted-foreground">
-								Permanently remove this team, all prompts, versions, deployments, members, invites, and associated
-								history.
-							</p>
-						</div>
-
-						<Button
-							variant="destructive"
-							onClick={async () => {
-								const confirmed = confirm("Delete this team permanently?");
-
-								if (!confirmed) {
-									return;
-								}
-
-								await deleteTeam({
-									teamId: team._id,
-								});
-							}}
-						>
-							<TrashIcon />
-							Delete Team
+					{canManage && (
+						<Button size="sm" variant="outline" onClick={() => openEdit(team._id, team.name)}>
+							<EditIcon />
+							Rename
 						</Button>
+					)}
+				</div>
+			</Section>
+
+			{isOwner && (
+				<Section className="border-destructive/15">
+					<div className="space-y-4">
+						<div>
+							<h2 className="font-medium text-destructive">Danger Zone</h2>
+						</div>
+
+						<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+							<div>
+								<p className="font-medium">Delete Team</p>
+
+								<p className="mt-1 text-sm text-muted-foreground">
+									Permanently remove this team and all associated data.
+								</p>
+							</div>
+
+							<Button variant="destructive" onClick={handleDelete}>
+								<TrashIcon />
+								Delete Team
+							</Button>
+						</div>
 					</div>
-				</section>
-			</div>
-		</div>
+				</Section>
+			)}
+		</Page>
 	);
 }

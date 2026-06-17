@@ -1,62 +1,87 @@
 "use client";
 
-import { MembersIcon } from "@/components/ui/icons";
+import { useState } from "react";
+import { TiUserAdd } from "react-icons/ti";
+import { Page, PageHeader, Section } from "@/components/layout";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTeams } from "@/hooks/use-team";
+import { useTeamDialogStore } from "@/stores/team-dialog-store";
+import { InviteMemberDialog } from "./_/invite-member-dialog";
+import { InvitesList } from "./_/invites-list";
+import { MembersList } from "./_/member-list";
 
 export default function MembersPage() {
+	const openCreate = useTeamDialogStore((state) => state.openCreate);
+	const { membership, team } = useTeams();
+	const [inviteOpen, setInviteOpen] = useState(false);
+
+	if (!membership || !team) return null;
+
+	const canManage = membership.role === "owner" || membership.role === "admin";
+
 	return (
-		<div className="h-full flex-1 space-y-7 overflow-y-auto no-scrollbar px-6 py-20 md:px-10 lg:px-16 transition-all duration-300 ease-in-out">
-			<div>
-				<h1 className="text-xl font-semibold">Members</h1>
+		<Page>
+			<PageHeader
+				title="Teams"
+				description="Organize collaboration across teams and members"
+				action={
+					<Button variant="outline" onClick={openCreate}>
+						<PlusIcon />
+						Create Team
+					</Button>
+				}
+			/>
 
-				<p className="mt-1 text-sm text-muted-foreground">
-					Manage team members, permissions, invitations, and collaboration.
-				</p>
-			</div>
+			<Section>
+				<div className="w-full flex justify-between">
+					<h2 className=" capitalize">{team?.name}</h2>
+					{canManage && (
+						<div className="max-w-[200px]">
+							<Button variant={"outline"} onClick={() => setInviteOpen(true)}>
+								<TiUserAdd />
+								Invite Member
+							</Button>
+						</div>
+					)}
+				</div>
 
-			<section className="overflow-hidden rounded-4xl border">
-				<div className="flex flex-col items-center px-8 py-16 text-center">
-					<div className="mb-6 flex size-14 items-center justify-center rounded-2xl border">
-						<MembersIcon className="size-7 text-muted-foreground" />
-					</div>
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-3">
+						<Avatar className="size-10">
+							<AvatarImage src={membership.avatar} />
+							<AvatarFallback>{membership.name.charAt(0).toUpperCase()}</AvatarFallback>
+						</Avatar>
 
-					<h2 className="text-2xl font-semibold tracking-tight">Coming Soon</h2>
+						<div>
+							<div className="capitalize text-sm">{membership.name}</div>
 
-					<p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
-						Invite teammates, manage permissions, assign roles, and collaborate securely across your workspace.
-					</p>
-
-					<div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-						<Badge label="Invitations" />
-						<Badge label="Roles" />
-						<Badge label="Permissions" />
-						<Badge label="Admins" />
-						<Badge label="Members" />
-						<Badge label="Teams" />
+							<Badge variant="secondary" className="mt-1 px-3 capitalize">
+								{membership.role}
+							</Badge>
+						</div>
 					</div>
 				</div>
-			</section>
+			</Section>
 
-			<div className="grid gap-4 md:grid-cols-3">
-				<FeatureCard title="Invitations" description="Invite teammates and manage pending invitations." />
+			<Tabs className="gap-6" defaultValue="members">
+				<TabsList variant="line" className="w-fit">
+					<TabsTrigger value="members">Members</TabsTrigger>
+					<TabsTrigger value="invites">Invites</TabsTrigger>
+				</TabsList>
 
-				<FeatureCard title="Roles" description="Configure owner, admin, and member permissions." />
+				<TabsContent value="members">
+					<MembersList membership={membership} />
+				</TabsContent>
 
-				<FeatureCard title="Access Control" description="Control who can edit, publish, and deploy prompts." />
-			</div>
-		</div>
-	);
-}
-
-function Badge({ label }: { label: string }) {
-	return <div className="rounded-full border px-3 py-1 text-xs text-muted-foreground">{label}</div>;
-}
-
-function FeatureCard({ title, description }: { title: string; description: string }) {
-	return (
-		<div className="rounded-2xl border p-5">
-			<h3 className="text-sm font-medium">{title}</h3>
-
-			<p className="mt-2 text-sm text-muted-foreground">{description}</p>
-		</div>
+				<TabsContent value="invites">
+					<InvitesList membership={membership} />
+				</TabsContent>
+			</Tabs>
+			<InviteMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+		</Page>
 	);
 }

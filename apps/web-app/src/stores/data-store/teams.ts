@@ -3,21 +3,24 @@
 import { create } from "zustand";
 
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-
 import type { CursorState } from "@/types";
 
+export type TeamWithMembership = Doc<"teams"> & {
+	membership: Doc<"members">;
+};
+
 type TeamsStore = {
-	teamsById: Record<Id<"teams">, Doc<"teams">>;
+	teamsById: Record<Id<"teams">, TeamWithMembership>;
 
 	teamIds: Id<"teams">[];
 
 	cursor: CursorState;
 
-	cache(teams: Doc<"teams">[]): void;
+	cache(teams: TeamWithMembership[]): void;
 
 	remove(ids: Id<"teams">[]): void;
 
-	update(id: Id<"teams">, partial: Partial<Doc<"teams">>): void;
+	update(id: Id<"teams">, partial: Partial<TeamWithMembership>): void;
 
 	setCursor(cursor: CursorState): void;
 
@@ -35,6 +38,8 @@ export const useTeamsStore = create<TeamsStore>((set) => ({
 	},
 
 	cache(teams) {
+		if (teams.length === 0) return;
+
 		set((state) => ({
 			teamsById: {
 				...state.teamsById,
@@ -48,7 +53,10 @@ export const useTeamsStore = create<TeamsStore>((set) => ({
 
 	remove(ids) {
 		set((state) => {
-			const teamsById = { ...state.teamsById };
+			const teamsById = {
+				...state.teamsById,
+			};
+
 			for (const id of ids) {
 				delete teamsById[id];
 			}
@@ -64,13 +72,19 @@ export const useTeamsStore = create<TeamsStore>((set) => ({
 	update(id, partial) {
 		set((state) => {
 			const team = state.teamsById[id];
-			if (!team) return state;
+
+			if (!team) {
+				return state;
+			}
 
 			return {
 				teamsById: {
 					...state.teamsById,
 
-					[id]: { ...team, ...partial },
+					[id]: {
+						...team,
+						...partial,
+					},
 				},
 			};
 		});

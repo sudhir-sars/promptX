@@ -39,7 +39,7 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
 function DialogContent({
 	className,
 	children,
-	showCloseButton = true,
+	showCloseButton = false,
 	...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
 	showCloseButton?: boolean;
@@ -47,18 +47,23 @@ function DialogContent({
 	return (
 		<DialogPortal>
 			<DialogOverlay />
+
 			<DialogPrimitive.Content
 				data-slot="dialog-content"
 				className={cn(
-					"fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-[min(var(--radius-4xl),24px)] bg-background p-6 text-sm text-popover-foreground shadow-xl ring-1 ring-foreground/5 duration-100 outline-none sm:max-w-md dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+					"fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-4xl bg-background p-6 pt-8! text-sm text-popover-foreground shadow-xl ring-1 ring-foreground/5 duration-100 outline-none sm:max-w-md dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
 					className,
 				)}
 				{...props}
 			>
 				{children}
+				<div className="absolute flex justify-center top-0 left-0 h-[5.5px] w-full overflow-hidden">
+					<div className="h-full w-[67%] bg-muted rounded-b-full" />
+				</div>
+
 				{showCloseButton && (
 					<DialogPrimitive.Close data-slot="dialog-close" asChild>
-						<Button variant="ghost" className="absolute top-4 right-4 bg-secondary" size="icon-sm">
+						<Button variant="ghost" className="absolute top-4 right-4 " size="icon-sm">
 							<HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
 							<span className="sr-only">Close</span>
 						</Button>
@@ -101,7 +106,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
 	return (
 		<DialogPrimitive.Title
 			data-slot="dialog-title"
-			className={cn("font-heading text-base leading-none font-medium", className)}
+			className={cn("font-heading text-[16px] leading-none font-medium", className)}
 			{...props}
 		/>
 	);
@@ -112,7 +117,7 @@ function DialogDescription({ className, ...props }: React.ComponentProps<typeof 
 		<DialogPrimitive.Description
 			data-slot="dialog-description"
 			className={cn(
-				"text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+				"text-[13px] font-normal text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
 				className,
 			)}
 			{...props}

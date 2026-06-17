@@ -32,11 +32,9 @@ export async function createDefaultTeam(
 	const membershipId = await ctx.db.insert("members", {
 		teamId,
 		userId: args.userId,
-		meta: {
-			avatar: args.avatar,
-			email: args.email,
-			name: args.name,
-		},
+		avatar: args.avatar,
+		email: args.email,
+		name: args.name,
 		role: "owner",
 	});
 
