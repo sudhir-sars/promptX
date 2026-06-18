@@ -6,10 +6,10 @@ export type {
 	ApiKeyKVKey,
 	ApiKeyRecord,
 	DeploymentEnv,
-	GetPromptResponse,
 	KVPromptConfig,
 	KVPromptVariant,
 	PromptKVKey,
+	PromptResponse,
 	RoutingInfo,
 } from "@promptx/shared";
 

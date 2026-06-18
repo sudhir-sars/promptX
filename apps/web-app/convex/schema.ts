@@ -1,7 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-import { auditAction, auditResource, deploymentEnv } from "./types";
+import { auditAction, auditResource } from "./types";
 
 export default defineSchema({
 	users: defineTable({
@@ -55,6 +55,7 @@ export default defineSchema({
 	})
 		.index("by_team", ["teamId"])
 		.index("by_team_name", ["teamId", "name"])
+		.index("by_team_slug", ["teamId", "slug"])
 		.searchIndex("search_name", {
 			searchField: "name",
 			filterFields: ["teamId"],
@@ -82,7 +83,6 @@ export default defineSchema({
 	deployments: defineTable({
 		teamId: v.id("teams"),
 		promptId: v.id("prompts"),
-		env: deploymentEnv,
 		config: v.array(
 			v.object({
 				versionId: v.id("versions"),
@@ -97,8 +97,7 @@ export default defineSchema({
 		.index("by_team", ["teamId"])
 		.index("by_team_active", ["teamId", "active"])
 		.index("by_prompt", ["promptId"])
-		.index("by_prompt_env", ["promptId", "env"])
-		.index("by_prompt_env_active", ["promptId", "env", "active"]),
+		.index("by_prompt_active", ["promptId", "active"]),
 
 	apiKeys: defineTable({
 		teamId: v.id("teams"),

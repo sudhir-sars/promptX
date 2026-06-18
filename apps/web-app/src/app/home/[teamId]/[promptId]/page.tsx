@@ -9,12 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDeployments } from "@/hooks/use-deployments";
 import { usePrompts } from "@/hooks/use-prompt";
 import { useVersions } from "@/hooks/use-versions";
+import { cn } from "@/lib/utils";
 import { useDeployDialogStore } from "@/stores/deploy-dialog-store";
+
+const LIVE_BADGE = "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+const LIVE_DOT = "bg-emerald-500";
 
 export default function StudioPage() {
 	const { prompt } = usePrompts();
 	const { version, createVersion, updateContent } = useVersions();
-	const { activeDeployment } = useDeployments();
+	const { activeDeployments } = useDeployments();
 
 	const [compareVersion, setCompareVersion] = useState<typeof version | null>(null);
 
@@ -23,6 +27,11 @@ export default function StudioPage() {
 	if (!prompt || !version) return null;
 
 	const isDraft = version.draft;
+
+	// The selected version is live if it's part of the active deployment.
+	const isDeployed = activeDeployments.some((deployment) =>
+		deployment.config.some((item) => item.versionId === version._id),
+	);
 
 	return (
 		<div className="h-full flex-1 overflow-y-auto px-6 pt-20 transition-all duration-300 ease-in-out no-scrollbar md:px-10 lg:px-16">
@@ -38,9 +47,15 @@ export default function StudioPage() {
 								{isDraft ? "Draft" : `v${version.sequence} (read-only)`}
 							</span>
 
-							{activeDeployment && (
-								<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
-									Live v{activeDeployment.config.map((v) => v.sequence).join(", ")}
+							{isDeployed && (
+								<span
+									className={cn(
+										"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+										LIVE_BADGE,
+									)}
+								>
+									<span className={cn("size-1.5 rounded-full", LIVE_DOT)} />
+									Live
 								</span>
 							)}
 
@@ -82,7 +97,7 @@ export default function StudioPage() {
 							</Button>
 						)}
 
-						<Button variant="outline" onClick={() => openDeployDialog(version)} disabled={isDraft}>
+						<Button variant="outline" onClick={() => openDeployDialog(version)} disabled={isDraft || isDeployed}>
 							<DeployIcon className="size-4" />
 							Deploy
 						</Button>

@@ -5,6 +5,7 @@ import {
 	DocPageWrapper,
 	DocParagraph,
 	DocSection,
+	InlineCode,
 	TerminalBlock,
 } from "../doc-primitives";
 
@@ -43,17 +44,12 @@ export default function NextjsContent() {
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					filename="lib/promptx.ts"
-					code={`import { PromptXClient } from "@xevos-ai/promptx";
-
-export const promptx = new PromptXClient({
-  apiKey: process.env.PROMPTX_API_KEY!,
-});`}
+					code={`import { promptx } from "@xevos-ai/promptx";`}
 				/>
 
 				<Callout type="note" className="mt-4">
-					Instantiate the client once at module scope. Its in-memory cache is per-instance, so a shared client lets
-					Server Components and Route Handlers reuse cached prompts.
+					The <InlineCode>promptx</InlineCode> singleton is shared across your app, so Server Components and Route
+					Handlers reuse the same in-memory cache for free. There is nothing to instantiate.
 				</Callout>
 			</DocSection>
 
@@ -68,7 +64,7 @@ export const promptx = new PromptXClient({
 					className="mt-5"
 					language="typescript"
 					filename="app/api/chat/route.ts"
-					code={`import { promptx } from "@/lib/promptx";
+					code={`import { promptx } from "@xevos-ai/promptx";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -114,7 +110,7 @@ export async function POST(req: Request) {
 					filename="app/actions.ts"
 					code={`"use server";
 
-import { promptx } from "@/lib/promptx";
+import { promptx } from "@xevos-ai/promptx";
 
 export async function generateReply(message: string) {
   const prompt = await promptx.getPrompt("chat-assistant");
@@ -145,7 +141,7 @@ export async function generateReply(message: string) {
 					className="mt-5"
 					language="typescript"
 					filename="app/api/chat/route.ts"
-					code={`import { promptx } from "@/lib/promptx";
+					code={`import { promptx } from "@xevos-ai/promptx";
 
 export const runtime = "edge";
 

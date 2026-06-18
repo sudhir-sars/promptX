@@ -1,6 +1,15 @@
 /** Default runtime tunables shared across packages. */
 
 export const DEFAULT_BASE_URL = "https://edge.promptx.xevos.dev";
+
+/**
+ * Base URL for `env=development` fetches, which hit the Convex backend directly
+ * (read-your-writes consistent, so edits are instant) instead of the cached
+ * edge. This is the deployment's Convex *HTTP actions* origin (the `.convex.site`
+ * host, not `.convex.cloud`).
+ */
+export const DEFAULT_DEV_BASE_URL = "https://befitting-cat-123.convex.site";
+
 export const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 
 /** How long a cached prompt is served fresh (no background refresh). */

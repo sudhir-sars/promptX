@@ -6,48 +6,30 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Id } from "@/convex/_generated/dataModel";
-import type { DeploymentEnv } from "@/convex/types";
 import { useDeployments } from "@/hooks/use-deployments";
 import { getRelativeTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { useRollbackDialogStore } from "@/stores/rollback-dialog-store";
-
-const ENVIRONMENTS: { value: DeploymentEnv; label: string }[] = [
-	{ value: "production", label: "Production" },
-	{ value: "preview", label: "Preview" },
-	{ value: "development", label: "Development" },
-];
 
 export function RollbackDialog() {
 	const { deployments, rollbackDeployment } = useDeployments();
 
 	const { isOpen, close } = useRollbackDialogStore();
 
-	const [env, setEnv] = useState<DeploymentEnv>("production");
 	const [selectedId, setSelectedId] = useState<Id<"deployments"> | null>(null);
 	const [isRollingBack, setIsRollingBack] = useState(false);
 
 	useEffect(() => {
 		if (isOpen) {
-			setEnv("production");
 			setSelectedId(null);
 		}
 	}, [isOpen]);
 
-	const envLabel = ENVIRONMENTS.find((option) => option.value === env)?.label ?? env;
+	// Previous (non-active) deployments that can be restored.
+	const candidates = useMemo(() => deployments.filter((deployment) => !deployment.active), [deployments]);
 
-	// Previous (non-active) deployments in the selected environment.
-	const candidates = useMemo(
-		() => deployments.filter((deployment) => deployment.env === env && !deployment.active),
-		[deployments, env],
-	);
-
-	const hasActive = useMemo(
-		() => deployments.some((deployment) => deployment.env === env && deployment.active),
-		[deployments, env],
-	);
+	const hasActive = useMemo(() => deployments.some((deployment) => deployment.active), [deployments]);
 
 	const handleRollback = async () => {
 		if (!selectedId || isRollingBack) {
@@ -60,7 +42,7 @@ export function RollbackDialog() {
 			const ok = await rollbackDeployment(selectedId);
 
 			if (ok) {
-				toast.success(`Rolled back ${envLabel} deployment`);
+				toast.success("Deployment rolled back");
 				close();
 			}
 		} finally {
@@ -75,33 +57,15 @@ export function RollbackDialog() {
 					<DialogTitle>Rollback Deployment</DialogTitle>
 
 					<DialogDescription>
-						Restore a previously deployed version to {envLabel}. This replaces the current active deployment.
+						Restore a previously deployed version. This replaces the current active deployment.
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-5">
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-sm font-medium">Environment</span>
-
-						<Select value={env} onValueChange={(value) => setEnv(value as DeploymentEnv)} disabled={isRollingBack}>
-							<SelectTrigger className="w-40">
-								<SelectValue />
-							</SelectTrigger>
-
-							<SelectContent>
-								{ENVIRONMENTS.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
 					<div className="max-h-72 space-y-2 overflow-y-auto no-scrollbar">
 						{candidates.length === 0 ? (
 							<div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-								No previous deployments to roll back to in {envLabel}.
+								No previous deployments to roll back to.
 							</div>
 						) : (
 							candidates.map((deployment) => {
@@ -140,7 +104,7 @@ export function RollbackDialog() {
 					</div>
 
 					{!hasActive && candidates.length > 0 && (
-						<p className="text-xs text-amber-600">There is no active deployment in {envLabel} to replace.</p>
+						<p className="text-xs text-amber-600">There is no active deployment to replace.</p>
 					)}
 
 					<Button onClick={handleRollback} disabled={!selectedId || isRollingBack || !hasActive} className="w-full">

@@ -27,7 +27,7 @@ export default function ExamplesContent() {
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`import { promptx } from "@/lib/promptx";
+					code={`import { promptx } from "@xevos-ai/promptx";
 
 const prompt = await promptx.getPrompt("support-agent");
 
@@ -97,8 +97,8 @@ const latest = await promptx.getPrompt("support-agent", {
 });`}
 				/>
 				<Callout type="note" className="mt-4">
-					Tune the cache with <InlineCode>cacheMaxAgeMs</InlineCode> and{" "}
-					<InlineCode>cacheStaleWhileRevalidateMs</InlineCode> on the client constructor. Both default to 60000ms.
+					Caching is built in and zero-config: each prompt is served fresh for 60s, then served stale for a further
+					60s while a single background refresh runs. Development fetches are never cached.
 				</Callout>
 			</DocSection>
 			<DocDivider />
@@ -111,7 +111,7 @@ const latest = await promptx.getPrompt("support-agent", {
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`import { promptx } from "@/lib/promptx";
+					code={`import { promptx } from "@xevos-ai/promptx";
 import { PromptFetchError, PromptxError } from "@xevos-ai/promptx";
 
 try {

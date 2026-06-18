@@ -5,10 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import type { CreateDeployConfig, DeploymentEnv } from "@/convex/types";
+import type { CreateDeployConfig } from "@/convex/types";
 import { useDeployments } from "@/hooks/use-deployments";
 import { cn } from "@/lib/utils";
 import { useDeployDialogStore } from "@/stores/deploy-dialog-store";
@@ -17,12 +16,6 @@ type DeployDialogItem = CreateDeployConfig[number] & {
 	isNew: boolean;
 };
 
-const ENVIRONMENTS: { value: DeploymentEnv; label: string }[] = [
-	{ value: "production", label: "Production" },
-	{ value: "preview", label: "Preview" },
-	{ value: "development", label: "Development" },
-];
-
 export function DeployDialog() {
 	const { deployments, deployVersion } = useDeployments();
 
@@ -30,12 +23,8 @@ export function DeployDialog() {
 
 	const [isDeploying, setIsDeploying] = useState(false);
 	const [abTesting, setAbTesting] = useState(false);
-	const [env, setEnv] = useState<DeploymentEnv>("production");
 
-	const activeDeployment = useMemo(
-		() => deployments.find((deployment) => deployment?.active && deployment.env === env) ?? null,
-		[deployments, env],
-	);
+	const activeDeployment = useMemo(() => deployments.find((deployment) => deployment?.active) ?? null, [deployments]);
 
 	const hasExistingDeployment =
 		!!activeDeployment &&
@@ -58,15 +47,7 @@ export function DeployDialog() {
 
 	const [config, setConfig] = useState<DeployDialogItem[]>([]);
 
-	// Reset the environment to production each time the dialog opens.
-	useEffect(() => {
-		if (isOpen) {
-			setEnv("production");
-		}
-	}, [isOpen]);
-
-	// Reset A/B state + config when the dialog opens, the version changes,
-	// or the user switches environments mid-dialog.
+	// Reset A/B state + config when the dialog opens or the version changes.
 	useEffect(() => {
 		if (!isOpen || !version) {
 			return;
@@ -79,8 +60,6 @@ export function DeployDialog() {
 	const totalTraffic = useMemo(() => config.reduce((sum, item) => sum + item.traffic, 0), [config]);
 
 	const remainingTraffic = Math.max(0, 100 - totalTraffic);
-
-	const envLabel = ENVIRONMENTS.find((option) => option.value === env)?.label ?? env;
 
 	const enableABTesting = (enabled: boolean) => {
 		if (!activeDeployment || !version) {
@@ -164,7 +143,6 @@ export function DeployDialog() {
 			setIsDeploying(true);
 
 			await deployVersion({
-				env,
 				config: abTesting ? config.map(({ isNew, ...item }) => item) : simpleConfig.map(({ isNew, ...item }) => item),
 			});
 
@@ -185,29 +163,11 @@ export function DeployDialog() {
 					<DialogTitle>Deploy Version</DialogTitle>
 
 					<DialogDescription>
-						{abTesting ? "Split traffic between deployed versions." : `Deploy v${version.sequence} to ${envLabel}.`}
+						{abTesting ? "Split traffic between deployed versions." : `Deploy v${version.sequence}.`}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-6">
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-sm font-medium">Environment</span>
-
-						<Select value={env} onValueChange={(value) => setEnv(value as DeploymentEnv)} disabled={isDeploying}>
-							<SelectTrigger className="w-40">
-								<SelectValue />
-							</SelectTrigger>
-
-							<SelectContent>
-								{ENVIRONMENTS.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
 					{!abTesting ? (
 						<>
 							<div className="rounded-xl border bg-muted/20 p-4">
@@ -216,11 +176,6 @@ export function DeployDialog() {
 								<div className="flex items-center justify-between text-sm">
 									<span className="text-muted-foreground">Version</span>
 									<span className="font-medium">v{version.sequence}</span>
-								</div>
-
-								<div className="mt-2 flex items-center justify-between text-sm">
-									<span className="text-muted-foreground">Environment</span>
-									<span className="font-medium">{envLabel}</span>
 								</div>
 							</div>
 
@@ -242,9 +197,7 @@ export function DeployDialog() {
 							<div className="flex items-center justify-between rounded-xl border p-4">
 								<div>
 									<div className="text-sm font-medium">Enable A/B Testing</div>
-									<div className="text-xs text-muted-foreground">
-										Split traffic between deployed versions in {envLabel}.
-									</div>
+									<div className="text-xs text-muted-foreground">Split traffic between deployed versions.</div>
 								</div>
 
 								<Switch checked={abTesting} onCheckedChange={enableABTesting} disabled={isDeploying} />

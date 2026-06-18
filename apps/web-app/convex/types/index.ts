@@ -52,8 +52,6 @@ export const createDeployConfig = v.array(
 	}),
 );
 
-export const deploymentEnv = v.union(v.literal("production"), v.literal("preview"), v.literal("development"));
-
 export type CreateDeployConfig = Infer<typeof createDeployConfig>;
 
 export interface RollbackDeploymentResult {

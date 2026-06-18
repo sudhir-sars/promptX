@@ -75,12 +75,9 @@ PROMPTX_API_KEY=xe_live_xxxxxxxxxx_<teamId>.xxxxxxxx`}
 
 			<DocSection id="get-prompt" label="Endpoints" title="Get a Prompt">
 				<DocParagraph>
-					Fetch the active deployment of a prompt by its identifier. Use the{" "}
-					<InlineCode>env</InlineCode> query parameter to choose the target
-					environment — one of <InlineCode>production</InlineCode>,{" "}
-					<InlineCode>preview</InlineCode>, or{" "}
-					<InlineCode>development</InlineCode>. It defaults to{" "}
-					<InlineCode>production</InlineCode>.
+					Fetch the active deployment of a prompt by its identifier. The optional{" "}
+					<InlineCode>env</InlineCode> query parameter accepts <InlineCode>production</InlineCode> or{" "}
+					<InlineCode>development</InlineCode> and defaults to <InlineCode>production</InlineCode>.
 				</DocParagraph>
 
 				<CodeBlock
@@ -183,7 +180,7 @@ PROMPTX_API_KEY=xe_live_xxxxxxxxxx_<teamId>.xxxxxxxx`}
 						[
 							"env",
 							"string",
-							"Resolved environment: production, preview, or development.",
+							"Resolved environment: production or development.",
 						],
 						["content", "string", "The prompt content to send to your model."],
 						[

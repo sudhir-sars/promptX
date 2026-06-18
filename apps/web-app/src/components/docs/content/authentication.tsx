@@ -40,7 +40,8 @@ export default function AuthenticationContent() {
 
 			<DocSection id="setup" label="Setup" title="Adding your API key">
 				<DocParagraph>
-					Store your API key in an environment variable and load it when creating a PromptX client.
+					Store your API key in the <InlineCode>PROMPTX_API_KEY</InlineCode> environment variable — the SDK loads it
+					automatically.
 				</DocParagraph>
 
 				<CodeBlock
@@ -54,19 +55,16 @@ export default function AuthenticationContent() {
 
 			<DocSection id="sdk-auth" label="SDK" title="SDK authentication">
 				<DocParagraph>
-					Pass your API key to the client constructor. Read it from an environment variable rather than hardcoding it.
+					The client reads <InlineCode>PROMPTX_API_KEY</InlineCode> from the environment automatically — there is no
+					key to pass and nothing to construct. Just import the <InlineCode>promptx</InlineCode> singleton.
 				</DocParagraph>
 
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`import { PromptXClient } from "@xevos-ai/promptx";
+					code={`import { promptx } from "@xevos-ai/promptx";
 
-const promptx = new PromptXClient({
-  apiKey: process.env.PROMPTX_API_KEY!,
-  // Optional: target a non-production environment
-  // env: "preview",
-});`}
+const prompt = await promptx.getPrompt("checkout-assistant");`}
 				/>
 			</DocSection>
 

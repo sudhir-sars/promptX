@@ -1,4 +1,4 @@
-import type { DeploymentEnv, KVPromptConfig } from "../../../../packages/shared/src";
+import type { KVPromptConfig } from "../../../../packages/shared/src";
 import { promptKvKey } from "../../../../packages/shared/src/utils";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { CreateDeployConfig } from "../types";
@@ -8,7 +8,6 @@ import type { OwnershipCtx } from "./permissions";
 export async function validateAndPrepareDeploymentConfig(
 	ctx: OwnershipCtx,
 	prompt: Doc<"prompts">,
-	env: DeploymentEnv,
 	config: CreateDeployConfig,
 ) {
 	invariant(config.length > 0, "At least one version is required");
@@ -59,7 +58,9 @@ export async function validateAndPrepareDeploymentConfig(
 	const kvPayload: KVPromptConfig = {
 		teamId: prompt.teamId,
 		slug: prompt.slug,
-		env,
+		// Deployments are production-only now; development is served per-version
+		// from the version catalog, not from a deployment.
+		env: "production",
 		variants: versions.map((version, index) => {
 			const entry = deploymentConfig[index];
 
@@ -78,46 +79,45 @@ export async function validateAndPrepareDeploymentConfig(
 		kvPayload,
 	};
 }
-export async function pushToCFKV(teamId: Id<"teams">, payload: KVPromptConfig) {
+function cfKvNamespaceUrl(key: string) {
 	const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"]!;
 	const namespaceId = process.env["PROMPTX_PROMPTS_KV"]!;
+
+	return `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${namespaceId}/values/${encodeURIComponent(key)}`;
+}
+
+async function cfKvPut(key: string, payload: unknown) {
 	const token = process.env["CLOUDFLARE_API_TOKEN"]!;
 
-	const slug = payload.slug;
-
-	const key = promptKvKey(teamId, slug);
-
-	const response = await fetch(
-		`https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${namespaceId}/values/${encodeURIComponent(key)}`,
-		{
-			method: "PUT",
-			headers: {
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(payload),
+	const response = await fetch(cfKvNamespaceUrl(key), {
+		method: "PUT",
+		headers: {
+			Authorization: `Bearer ${token}`,
+			"Content-Type": "application/json",
 		},
-	);
+		body: JSON.stringify(payload),
+	});
 
-	invariant(response.ok, `Cloudflare KV deployment failed: ${await response.text()}`);
+	invariant(response.ok, `Cloudflare KV write failed: ${await response.text()}`);
+}
+
+async function cfKvDelete(key: string) {
+	const token = process.env["CLOUDFLARE_API_TOKEN"]!;
+
+	const response = await fetch(cfKvNamespaceUrl(key), {
+		method: "DELETE",
+		headers: { Authorization: `Bearer ${token}` },
+	});
+
+	invariant(response.ok, `Cloudflare KV delete failed: ${await response.text()}`);
+}
+
+export async function pushToCFKV(teamId: Id<"teams">, payload: KVPromptConfig) {
+	await cfKvPut(promptKvKey(teamId, payload.slug), payload);
 	return payload;
 }
 
 export async function deleteFromCFKV(slug: string, teamId: string) {
-	const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"]!;
-	const namespaceId = process.env["PROMPTX_PROMPTS_KV"]!;
-	const token = process.env["CLOUDFLARE_API_TOKEN"]!;
-
-	const key = promptKvKey(teamId, slug);
-
-	const response = await fetch(
-		`https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${namespaceId}/values/${encodeURIComponent(key)}`,
-		{
-			method: "DELETE",
-			headers: { Authorization: `Bearer ${token}` },
-		},
-	);
-
-	invariant(response.ok, `Cloudflare KV delete failed: ${await response.text()}`);
+	await cfKvDelete(promptKvKey(teamId, slug));
 	return { success: true };
 }

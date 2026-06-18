@@ -3,83 +3,83 @@
 import { Button } from "@/components/ui/button";
 import { useDeployments } from "@/hooks/use-deployments";
 import { getRelativeTime } from "@/lib/date";
-import { cn } from "@/lib/utils";
 import { useRollbackDialogStore } from "@/stores/rollback-dialog-store";
 
+function LiveBadge() {
+	return (
+		<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
+			<span className="size-1.5 rounded-full bg-emerald-500" />
+			Live
+		</span>
+	);
+}
+
 export default function DeploymentsPage() {
-	const { deployments, activeDeployment, status, hasMore, loadMoreRef } = useDeployments();
+	const { deployments, activeDeployments, status, hasMore, loadMoreRef } = useDeployments();
 
 	const openRollbackDialog = useRollbackDialogStore((state) => state.open);
+
+	const active = activeDeployments[0] ?? null;
 
 	return (
 		<div className="h-full flex-1 space-y-6  overflow-y-auto no-scrollbar px-6 pt-20 md:px-10 lg:px-16 transition-all duration-300 ease-in-out">
 			<div className="shrink-0">
 				<h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Deployments</h1>
 
-				<p className="mt-1 text-sm text-muted-foreground">
-					Release versions to production and manage traffic allocation.
-				</p>
+				<p className="mt-1 text-sm text-muted-foreground">Release versions and manage traffic allocation.</p>
 			</div>
 
-			<div className="rounded-2xl border p-4 sm:rounded-3xl sm:p-6">
-				<div className="flex items-start justify-between gap-3">
-					<div>
-						<div className="flex items-center gap-2">
-							<div
-								className={cn("h-2 w-2 rounded-full", activeDeployment ? "bg-emerald-500" : "bg-muted-foreground/40")}
-							/>
-
-							<span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-								{activeDeployment ? "Live" : "Inactive"}
-							</span>
+			{active ? (
+				<div className="rounded-2xl border p-4 sm:rounded-3xl sm:p-6">
+					<div className="flex items-start justify-between gap-3">
+						<div className="min-w-0">
+							<LiveBadge />
+							<p className="mt-2 text-xs text-muted-foreground">Serving traffic.</p>
 						</div>
 
-						<p className="mt-2 text-sm text-muted-foreground">
-							{activeDeployment
-								? "Serving production traffic."
-								: "No versions are currently receiving production traffic."}
-						</p>
-					</div>
-
-					{activeDeployment && (
 						<Button size="sm" variant="outline" onClick={() => openRollbackDialog()}>
 							Rollback
 						</Button>
-					)}
-				</div>
+					</div>
 
-				{activeDeployment && (
 					<div className="mt-5 space-y-4">
-						{activeDeployment.config.map((version) => (
-							<div key={version.versionId}>
-								<div className="mb-2 flex items-center gap-2">
-									<span className="shrink-0 text-sm font-medium">v{version.sequence}</span>
+						{active.config.map((version) => (
+							<div key={version.versionId} className="flex items-center gap-2">
+								<span className="shrink-0 text-sm font-medium">v{version.sequence}</span>
 
-									<div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
-										<div
-											className="h-full rounded-full bg-foreground transition-all"
-											style={{
-												width: `${version.traffic}%`,
-											}}
-										/>
-									</div>
-
-									<span className="shrink-0 text-sm text-muted-foreground">{version.traffic}%</span>
+								<div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+									<div
+										className="h-full rounded-full bg-foreground transition-all"
+										style={{ width: `${version.traffic}%` }}
+									/>
 								</div>
+
+								<span className="shrink-0 text-sm text-muted-foreground">{version.traffic}%</span>
 							</div>
 						))}
 					</div>
-				)}
-			</div>
+				</div>
+			) : (
+				<div className="rounded-2xl border p-4 sm:rounded-3xl sm:p-6">
+					<div className="flex items-center gap-2">
+						<span className="size-1.5 rounded-full bg-muted-foreground/40" />
+						<span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Inactive</span>
+					</div>
+
+					<p className="mt-2 text-sm text-muted-foreground">No versions are currently receiving traffic.</p>
+				</div>
+			)}
 
 			<div className="flex-1 py-10">
-				{deployments.map((deployment) => {
+				{deployments.map((deployment, index) => {
 					if (!deployment) return null;
 
 					return (
 						<div key={deployment._id} className="block w-full border-b px-4 py-4 text-left sm:px-6">
 							<div className="flex  justify-between gap-3">
-								<div className="flex flex-wrap gap-1.5">
+								<div className="flex flex-wrap items-center gap-1.5">
+									<span className="shrink-0 text-sm font-semibold text-muted-foreground">D{index + 1}</span>
+
 									{deployment.config.map((version) => (
 										<span
 											key={version.versionId}
@@ -89,12 +89,8 @@ export default function DeploymentsPage() {
 											<span className="ml-1 text-muted-foreground">{version.traffic}%</span>
 										</span>
 									))}
-									{deployment.active && (
-										<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
-											<div className="size-1.5 rounded-full bg-emerald-500" />
-											Live
-										</span>
-									)}
+
+									{deployment.active && <LiveBadge />}
 								</div>
 
 								<div className="flex items-center gap-3">

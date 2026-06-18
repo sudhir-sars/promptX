@@ -1,5 +1,4 @@
-export type { GetPromptResponse, RoutingInfo } from "@promptx/shared";
-export { PromptXClient } from "./client";
+export { promptResponseSchema, type PromptResponse, type RoutingInfo } from "@promptx/shared";
+export { promptx } from "./client";
 export { PromptFetchError, PromptxError } from "./zlib/error";
-export { isPrompt } from "./zlib/prompt";
-export type { DeploymentEnv, Prompt, PromptXConfig } from "./ztypes";
+export type { DeploymentEnv, GetPromptOptions, Prompt } from "./ztypes";

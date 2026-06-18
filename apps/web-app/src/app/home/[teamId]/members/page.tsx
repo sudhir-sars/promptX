@@ -40,12 +40,10 @@ export default function MembersPage() {
 				<div className="w-full flex justify-between">
 					<h2 className=" capitalize">{team?.name}</h2>
 					{canManage && (
-						<div className="max-w-[200px]">
-							<Button variant={"outline"} onClick={() => setInviteOpen(true)}>
-								<TiUserAdd />
-								Invite Member
-							</Button>
-						</div>
+						<Button variant={"outline"} onClick={() => setInviteOpen(true)}>
+							<TiUserAdd />
+							Invite Member
+						</Button>
 					)}
 				</div>
 

@@ -22,7 +22,7 @@ Nothing here may import an app or the SDK.
 ## Consuming
 
 ```ts
-import { DeploymentEnv, GetPromptResponse } from "@promptx/shared";
+import { DeploymentEnv, PromptResponse } from "@promptx/shared";
 import { promptKvKey, parseApiKey } from "@promptx/shared/utils";
 import { KVPromptConfig } from "@promptx/shared/contracts";
 ```
@@ -31,6 +31,5 @@ import { KVPromptConfig } from "@promptx/shared/contracts";
 
 - Raw table / domain entity types (Team, Prompt, Deployment…) — Convex-coupled,
   stay in the web app.
-- `isPrompt()` — single consumer (SDK), stays in the SDK.
 - `selectVariant()` — single consumer (Edge), stays in the Edge.
 - Anything importing Convex `Doc`/`Id`, Hono `MiddlewareHandler`, or CF `Env`.

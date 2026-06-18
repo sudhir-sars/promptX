@@ -87,20 +87,15 @@ export default function GettingStartedContent() {
 
 			<DocDivider />
 
-			<DocSection id="initialize" label="Step 3" title="Initialize the client">
+			<DocSection id="initialize" label="Step 3" title="Import the client">
 				<DocParagraph>
-					Create a PromptX client instance. This becomes your entry point for all SDK operations.
+					There is nothing to initialize — import the ready-to-use <InlineCode>promptx</InlineCode> singleton. It
+					reads its configuration from your environment automatically.
 				</DocParagraph>
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					filename="lib/promptx.ts"
-					code={`import { PromptXClient } from "@xevos-ai/promptx";
-
-export const promptx = new PromptXClient({
-  apiKey: process.env.PROMPTX_API_KEY!,
-  // env defaults to "production"
-});`}
+					code={`import { promptx } from "@xevos-ai/promptx";`}
 				/>
 			</DocSection>
 
@@ -115,7 +110,7 @@ export const promptx = new PromptXClient({
 					className="mt-5"
 					language="typescript"
 					filename="app/api/chat/route.ts"
-					code={`import { promptx } from "@/lib/promptx";
+					code={`import { promptx } from "@xevos-ai/promptx";
 
 export async function POST(req: Request) {
   const { message } = await req.json();
@@ -158,7 +153,7 @@ export async function POST(req: Request) {
 						{
 							title: "Deploy",
 							content:
-								"Click 'Deploy' on the version you want live. Choose your target environment and traffic allocation.",
+								"Click 'Deploy' on the version you want live and choose its traffic allocation.",
 						},
 						{
 							title: "Verify",

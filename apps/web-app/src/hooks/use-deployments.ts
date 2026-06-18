@@ -29,7 +29,7 @@ function syncDeploymentCache(deployment: Doc<"deployments">, active: boolean) {
 	if (active) {
 		for (const deploymentId of deploymentIds) {
 			const existing = store.deploymentsById[deploymentId];
-			if (existing?.active && existing.env === deployment.env) {
+			if (existing?.active) {
 				useDeploymentsStore.getState().update(deploymentId, { active: false });
 			}
 		}
@@ -61,6 +61,7 @@ export function useDeployments() {
 	});
 
 	const activeDeployment = useMemo(() => deployments.find((deployment) => deployment.active) ?? null, [deployments]);
+	const activeDeployments = useMemo(() => deployments.filter((deployment) => deployment.active), [deployments]);
 
 	const loadDeployments = async () => {
 		if (!promptId) return;
@@ -143,11 +144,10 @@ export function useDeployments() {
 
 		if (!target) return false;
 
-		// Roll back within the target deployment's own environment.
-		const current = deployments.find((deployment) => deployment.active && deployment.env === target.env);
+		const current = deployments.find((deployment) => deployment.active);
 
 		if (!current) {
-			consumeError(new Error("No active deployment to roll back in this environment."));
+			consumeError(new Error("No active deployment to roll back."));
 
 			return false;
 		}
@@ -172,6 +172,7 @@ export function useDeployments() {
 	return {
 		deployments,
 		activeDeployment,
+		activeDeployments,
 
 		cursor,
 		status: cursor.status,

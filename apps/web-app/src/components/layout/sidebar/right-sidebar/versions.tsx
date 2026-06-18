@@ -9,17 +9,30 @@ import { cn } from "@/lib/utils";
 import { useStudioStore } from "@/stores/prompt-editor-store";
 import { useVersionTagDialogStore } from "@/stores/version-tag-dialog-store";
 
+const LIVE_BADGE = "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+const LIVE_DOT = "bg-emerald-500";
+const LIVE_GLOW = "border border-emerald-500 bg-emerald-500";
+const LIVE_RING = "ring-2 ring-emerald-500/30";
+
 export function VersionSidebarContent() {
 	const { versions, version } = useVersions();
-	const { activeDeployment } = useDeployments();
+	const { activeDeployments } = useDeployments();
 
 	const setSelectedVersion = useStudioStore((state) => state.setSelectedVersion);
 	const openTagDialog = useVersionTagDialogStore((state) => state.open);
 
-	const deployedVersionIds = useMemo(
-		() => new Set(activeDeployment?.config.map((item) => item.versionId)),
-		[activeDeployment],
-	);
+	// Versions that are part of the active (live) deployment.
+	const deployedVersionIds = useMemo(() => {
+		const ids = new Set<string>();
+
+		for (const deployment of activeDeployments) {
+			for (const config of deployment.config) {
+				ids.add(config.versionId);
+			}
+		}
+
+		return ids;
+	}, [activeDeployments]);
 
 	return (
 		<div className="space-y-8">
@@ -30,6 +43,7 @@ export function VersionSidebarContent() {
 
 				const isSelected = item._id === version?._id;
 				const isDraft = item.draft;
+
 				const isDeployed = deployedVersionIds.has(item._id);
 
 				// "draft" is an internal sentinel carried by promoted versions, not a user tag.
@@ -55,15 +69,15 @@ export function VersionSidebarContent() {
 
 								!isDraft && isSelected && !isDeployed && "border border-foreground bg-foreground",
 
-								!isDraft && !isSelected && isDeployed && "border border-blue-500 bg-blue-500",
+								!isDraft && isDeployed && LIVE_GLOW,
 
-								!isDraft && isSelected && isDeployed && "border-blue-500 bg-blue-500 ring-2 ring-blue-500/30",
+								!isDraft && isSelected && isDeployed && LIVE_RING,
 							)}
 						/>
 
 						<div className="flex items-start justify-between gap-2">
 							<div className="min-w-0">
-								<div className="flex items-center gap-2">
+								<div className="flex flex-wrap items-center gap-2">
 									<p
 										className={cn(
 											"text-sm transition-colors",
@@ -72,6 +86,18 @@ export function VersionSidebarContent() {
 									>
 										{isDraft ? "Draft" : `v${item.sequence}`}
 									</p>
+
+									{isDeployed && (
+										<span
+											className={cn(
+												"inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+												LIVE_BADGE,
+											)}
+										>
+											<span className={cn("size-1.5 rounded-full", LIVE_DOT)} />
+											Live
+										</span>
+									)}
 
 									{userTag && (
 										<span className="inline-flex max-w-[8rem] items-center truncate rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-400">

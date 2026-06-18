@@ -61,7 +61,7 @@ const response = await openai.chat.completions.create({
 				<CodeBlock
 					className="mt-3"
 					language="typescript"
-					code={`import { promptx } from "@/lib/promptx";
+					code={`import { promptx } from "@xevos-ai/promptx";
 
 const prompt = await promptx.getPrompt("checkout-assistant");
 
@@ -109,7 +109,7 @@ const response = await openai.chat.completions.create({
 						{
 							title: "Save and deploy",
 							content:
-								"Save the initial version and deploy it to your target environment. This makes it available via the SDK.",
+								"Save the initial version and deploy it. This makes it available via the SDK.",
 						},
 						{
 							title: "Install the SDK",

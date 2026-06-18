@@ -37,10 +37,9 @@ export default function PromptVersioningContent() {
 						<DocH3>Version identity</DocH3>
 						<DocParagraph className="mt-2">
 							Each version has a monotonically increasing integer ID (<InlineCode>v0</InlineCode>,{" "}
-							<InlineCode>v1</InlineCode>, <InlineCode>v2</InlineCode>…) and an optional human-readable tag (for
-							example, <InlineCode>production</InlineCode>, <InlineCode>preview</InlineCode>, or{" "}
-							<InlineCode>experiment-a</InlineCode>). The integer is assigned automatically. Tags are optional but
-							strongly recommended.
+							<InlineCode>v1</InlineCode>, <InlineCode>v2</InlineCode>…) and an optional human-readable name (for
+							example, <InlineCode>stable</InlineCode> or <InlineCode>experiment-a</InlineCode>). The integer is
+							assigned automatically. Names are optional but strongly recommended.
 						</DocParagraph>
 					</div>
 
@@ -72,7 +71,7 @@ export default function PromptVersioningContent() {
 					rows={[
 						["draft", "Active working copy in the Studio editor", "Yes"],
 						["saved", "Immutable snapshot, not yet deployed", "No"],
-						["deployed", "Actively serving traffic in one or more environments", "No"],
+						["deployed", "Actively serving production traffic", "No"],
 						["rolled-back", "Previously deployed, replaced by a newer version", "No"],
 					]}
 				/>

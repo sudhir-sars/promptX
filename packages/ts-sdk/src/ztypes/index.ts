@@ -1,17 +1,19 @@
-import type { DeploymentEnv } from "@promptx/shared";
-
 // Re-export the canonical wire types so SDK consumers have one import surface.
 // The SDK's public `Prompt` is the resolved Edge response.
-export type { DeploymentEnv, GetPromptResponse as Prompt } from "@promptx/shared";
+export type { DeploymentEnv, PromptResponse as Prompt } from "@promptx/shared";
 
-/** SDK-specific client configuration (not a cross-service contract). */
-export interface PromptXConfig {
-	apiKey: string;
-	baseUrl?: string;
-	env?: DeploymentEnv;
-	/** How long a cached prompt is served fresh before entering the stale window. */
-	cacheMaxAgeMs?: number;
-	/** Additional window after max-age during which a stale prompt is served while it refreshes in the background. */
-	cacheStaleWhileRevalidateMs?: number;
-	requestTimeoutMs?: number;
+/** Options for a single `getPrompt` call. All optional. */
+export interface GetPromptOptions {
+	/**
+	 * Production only: a stable id (user id, chat id, …) used for sticky A/B
+	 * routing across a deployment's variants.
+	 */
+	sessionId?: string;
+	/** Production only: bypass the cache and fetch fresh from the edge. */
+	forceRefresh?: boolean;
+	/**
+	 * Development only: the prompt version to resolve (the version's name). When
+	 * omitted, the live draft (your latest edits) is served. Ignored in production.
+	 */
+	promptVersion?: string;
 }

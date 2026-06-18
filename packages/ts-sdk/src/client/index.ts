@@ -2,45 +2,55 @@ import {
 	DEFAULT_BASE_URL,
 	DEFAULT_CACHE_MAX_AGE_MS,
 	DEFAULT_CACHE_STALE_WHILE_REVALIDATE_MS,
+	DEFAULT_DEV_BASE_URL,
 	DEFAULT_REQUEST_TIMEOUT_MS,
+	DEV_PROMPT_IDENTIFIER_PARAM,
+	DEV_PROMPT_PATH,
+	DEV_PROMPT_VERSION_PARAM,
+	promptResponseSchema,
 	promptResourcePath,
 	SESSION_HEADER,
 } from "@promptx/shared";
 import { MemoryCache } from "../cache";
-import { PromptFetchError } from "../zlib/error";
-import { isPrompt } from "../zlib/prompt";
-import type { DeploymentEnv, Prompt, PromptXConfig } from "../ztypes";
+import { PromptFetchError, PromptxError } from "../zlib/error";
+import type { GetPromptOptions, Prompt } from "../ztypes";
 
-export class PromptXClient {
-	private readonly baseUrl: string;
-	private readonly env: DeploymentEnv;
-	private readonly apiKey: string;
-	private readonly requestTimeoutMs: number;
+declare const process: { env: Record<string, string | undefined> };
 
-	private readonly cache: MemoryCache<Prompt>;
+/**
+ * Zero-configuration prompt client. The only thing to set is `PROMPTX_API_KEY`.
+ * The environment is taken from `NODE_ENV` (`development` → development,
+ * otherwise production). Import the `promptx` singleton and call `getPrompt`.
+ */
+class PromptXClient {
+	private readonly env = process.env.NODE_ENV === "development" ? "development" : "production";
+	private readonly cache = new MemoryCache<Prompt>(DEFAULT_CACHE_MAX_AGE_MS, DEFAULT_CACHE_STALE_WHILE_REVALIDATE_MS);
 	private readonly inflight = new Map<string, Promise<Prompt>>();
+	private cachedApiKey: string | null = null;
 
-	constructor(config: PromptXConfig) {
-		this.apiKey = config.apiKey;
-		this.env = config.env ?? "production";
-		this.requestTimeoutMs = config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+	/** Read `PROMPTX_API_KEY` on first use, so importing never throws. */
+	private apiKey(): string {
+		if (this.cachedApiKey) {
+			return this.cachedApiKey;
+		}
 
-		const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
-		this.baseUrl = baseUrl.replace(/\/+$/, "");
+		const apiKey = process.env.PROMPTX_API_KEY;
 
-		this.cache = new MemoryCache<Prompt>(
-			config.cacheMaxAgeMs ?? DEFAULT_CACHE_MAX_AGE_MS,
-			config.cacheStaleWhileRevalidateMs ?? DEFAULT_CACHE_STALE_WHILE_REVALIDATE_MS,
-		);
+		if (!apiKey) {
+			throw new PromptxError(
+				"Missing PROMPTX_API_KEY. Set the PROMPTX_API_KEY environment variable to your team's API key.",
+			);
+		}
+
+		this.cachedApiKey = apiKey;
+		return apiKey;
 	}
 
-	async getPrompt(
-		identifier: string,
-		options?: {
-			sessionId?: string;
-			forceRefresh?: boolean;
-		},
-	): Promise<Prompt> {
+	async getPrompt(identifier: string, options?: GetPromptOptions): Promise<Prompt> {
+		if (this.env === "development") {
+			return this.fetchDevPrompt(identifier, options?.promptVersion);
+		}
+
 		const forceRefresh = options?.forceRefresh ?? false;
 		const sessionId = options?.sessionId;
 		const cacheKey = `${this.env}:${identifier}:${sessionId ?? "default"}`;
@@ -62,6 +72,22 @@ export class PromptXClient {
 		}
 
 		return this.revalidate(cacheKey, identifier, sessionId);
+	}
+
+	private async fetchDevPrompt(identifier: string, promptVersion?: string): Promise<Prompt> {
+		const query = new URLSearchParams({ [DEV_PROMPT_IDENTIFIER_PARAM]: identifier });
+		if (promptVersion) {
+			query.set(DEV_PROMPT_VERSION_PARAM, promptVersion);
+		}
+
+		const url = `${DEFAULT_DEV_BASE_URL}${DEV_PROMPT_PATH}?${query.toString()}`;
+
+		const response = await fetch(url, {
+			headers: { Authorization: `Bearer ${this.apiKey()}` },
+			signal: AbortSignal.timeout(DEFAULT_REQUEST_TIMEOUT_MS),
+		});
+
+		return this.parseResponse(response, identifier);
 	}
 
 	private revalidate(cacheKey: string, identifier: string, sessionId?: string): Promise<Prompt> {
@@ -87,16 +113,20 @@ export class PromptXClient {
 	}
 
 	private async fetchPrompt(identifier: string, sessionId?: string): Promise<Prompt> {
-		const url = `${this.baseUrl}${promptResourcePath(identifier)}?env=${this.env}`;
+		const url = `${DEFAULT_BASE_URL}${promptResourcePath(identifier)}?env=${this.env}`;
 
 		const response = await fetch(url, {
 			headers: {
-				Authorization: `Bearer ${this.apiKey}`,
+				Authorization: `Bearer ${this.apiKey()}`,
 				...(sessionId ? { [SESSION_HEADER]: sessionId } : {}),
 			},
-			signal: AbortSignal.timeout(this.requestTimeoutMs),
+			signal: AbortSignal.timeout(DEFAULT_REQUEST_TIMEOUT_MS),
 		});
 
+		return this.parseResponse(response, identifier);
+	}
+
+	private async parseResponse(response: Response, identifier: string): Promise<Prompt> {
 		if (!response.ok) {
 			throw new PromptFetchError(response.status, response.statusText, identifier);
 		}
@@ -108,10 +138,16 @@ export class PromptXClient {
 			throw new PromptFetchError(response.status, "Invalid JSON body", identifier);
 		}
 
-		if (!isPrompt(body)) {
+		// Verify the response against the shared contract by parsing it back.
+		const parsed = promptResponseSchema.safeParse(body);
+
+		if (!parsed.success) {
 			throw new PromptFetchError(response.status, "Invalid Response body", identifier);
 		}
 
-		return body;
+		return parsed.data;
 	}
 }
+
+/** The ready-to-use, zero-configuration PromptX client. */
+export const promptx = new PromptXClient();

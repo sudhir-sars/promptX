@@ -7,7 +7,6 @@
 		"build": "next build",
 		"start": "next start",
 		"type-check": "tsc --noEmit",
-		"lint": "biome check .",
 		"check": "pnpm lint && pnpm type-check"
 	},
 	"dependencies": {

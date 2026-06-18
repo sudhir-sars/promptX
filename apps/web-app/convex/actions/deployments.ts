@@ -4,12 +4,7 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { authedAction } from "../lib/auth";
 import { pushToCFKV } from "../lib/deployments";
-import {
-	createDeployConfig,
-	type DeployPromptVersionResult,
-	deploymentEnv,
-	type RollbackDeploymentResult,
-} from "../types";
+import { createDeployConfig, type DeployPromptVersionResult, type RollbackDeploymentResult } from "../types";
 
 export const rollbackDeployment = authedAction({
 	args: {
@@ -34,14 +29,12 @@ export const deployPromptVersion = authedAction({
 	args: {
 		promptId: v.id("prompts"),
 		config: createDeployConfig,
-		env: deploymentEnv,
 	},
-	handler: async (ctx, { promptId, config, env }) => {
+	handler: async (ctx, { promptId, config }) => {
 		const result: DeployPromptVersionResult = await ctx.runMutation(internal.deployments._deployPromptVersionDb, {
 			promptId,
 			config,
 			userId: ctx.userId,
-			env,
 		});
 		const { deployment, kvPayload } = result;
 

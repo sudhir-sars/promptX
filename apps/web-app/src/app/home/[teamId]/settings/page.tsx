@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Page, PageHeader, Section } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
@@ -10,11 +11,14 @@ import { getRelativeTime } from "@/lib/date";
 
 import { confirm } from "@/stores/confirm-dialog-store";
 import { useTeamDialogStore } from "@/stores/team-dialog-store";
+import { TransferOwnershipDialog } from "./_/transfer-ownership-dialog";
 
 export default function SettingsPage() {
 	const { team, deleteTeam, membership } = useTeams();
 
 	const { openEdit } = useTeamDialogStore();
+
+	const [transferOpen, setTransferOpen] = useState(false);
 
 	if (!membership || !team) {
 		return <ErrorState message="Unable to load team details. The team may not exist or you may not have access." />;
@@ -87,6 +91,24 @@ export default function SettingsPage() {
 			</Section>
 
 			{isOwner && (
+				<Section>
+					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+						<div>
+							<p className="font-medium">Transfer Ownership</p>
+
+							<p className="mt-1 text-sm text-muted-foreground">
+								Hand this team over to another member. You will become an admin.
+							</p>
+						</div>
+
+						<Button variant="outline" onClick={() => setTransferOpen(true)}>
+							Transfer Ownership
+						</Button>
+					</div>
+				</Section>
+			)}
+
+			{isOwner && (
 				<Section className="border-destructive/15">
 					<div className="space-y-4">
 						<div>
@@ -110,6 +132,8 @@ export default function SettingsPage() {
 					</div>
 				</Section>
 			)}
+
+			{isOwner && <TransferOwnershipDialog open={transferOpen} onOpenChange={setTransferOpen} />}
 		</Page>
 	);
 }

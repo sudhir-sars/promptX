@@ -145,3 +145,54 @@ export const _getVersionsByIds = internalQuery({
 		return Promise.all(versionIds.map((id) => ctx.db.get(id)));
 	},
 });
+
+/**
+ * Resolve a prompt for `env=development`, served straight from Convex (instant,
+ * read-your-writes). With a `promptVersion` (a version's name), returns that
+ * version; without one, returns the live draft (the editable workspace) so
+ * developers always see their latest edits. Returns `null` when nothing matches.
+ */
+export const _resolveDevPrompt = internalQuery({
+	args: {
+		teamId: v.id("teams"),
+		slug: v.string(),
+		promptVersion: v.optional(v.string()),
+	},
+	handler: async (ctx, { teamId, slug, promptVersion }) => {
+		const prompt = await ctx.db
+			.query("prompts")
+			.withIndex("by_team_slug", (q) => q.eq("teamId", teamId).eq("slug", slug))
+			.unique();
+
+		if (!prompt) {
+			return null;
+		}
+
+		const versionName = promptVersion?.trim();
+
+		if (versionName && versionName.toLowerCase() !== "draft") {
+			const named = await ctx.db
+				.query("versions")
+				.withIndex("by_prompt_tag", (q) => q.eq("promptId", prompt._id).eq("tag", versionName))
+				.unique();
+
+			if (!named || named.draft) {
+				return null;
+			}
+
+			return { content: named.content, sequence: named.sequence };
+		}
+
+		// No version requested → the live draft (latest editable content).
+		const draft = await ctx.db
+			.query("versions")
+			.withIndex("by_prompt_draft", (q) => q.eq("promptId", prompt._id).eq("draft", true))
+			.unique();
+
+		if (!draft) {
+			return null;
+		}
+
+		return { content: draft.content, sequence: draft.sequence };
+	},
+});

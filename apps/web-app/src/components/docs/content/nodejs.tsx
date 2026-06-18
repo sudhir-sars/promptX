@@ -33,7 +33,8 @@ export default function NodejsContent() {
 
 			<DocSection id="configuration" label="Configuration" title="Configuration">
 				<DocParagraph>
-					Store your API key in an environment variable and pass it to the client constructor.
+					Store your API key in the <InlineCode>PROMPTX_API_KEY</InlineCode> environment variable — the SDK reads it
+					automatically.
 				</DocParagraph>
 
 				<CodeBlock
@@ -46,17 +47,12 @@ export default function NodejsContent() {
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					filename="promptx.ts"
-					code={`import { PromptXClient } from "@xevos-ai/promptx";
-
-export const promptx = new PromptXClient({
-  apiKey: process.env.PROMPTX_API_KEY!,
-});`}
+					code={`import { promptx } from "@xevos-ai/promptx";`}
 				/>
 
 				<Callout type="note" className="mt-4">
-					<InlineCode>apiKey</InlineCode> is the only required option. <InlineCode>env</InlineCode> defaults to{" "}
-					<InlineCode>production</InlineCode>; cache and timeout options are documented under Config Options.
+					<InlineCode>PROMPTX_API_KEY</InlineCode> is the only variable you set. The environment is chosen
+					automatically from <InlineCode>NODE_ENV</InlineCode>.
 				</Callout>
 			</DocSection>
 
@@ -157,20 +153,14 @@ try {
 
 			<DocSection id="config" label="Reference" title="Config Options">
 				<DocParagraph>
-					The <InlineCode>PromptXClient</InlineCode> constructor accepts the following options.
+					The client configures itself from the environment. The environment (production or development) is taken
+					from <InlineCode>NODE_ENV</InlineCode>.
 				</DocParagraph>
 
 				<PropTable
 					className="mt-5"
-					columns={["Option", "Type", "Default", "Description"]}
-					rows={[
-						["apiKey", "string", "—", "Required. Your team's API key."],
-						["env", "string", '"production"', "Target environment: production, preview, or development."],
-						["baseUrl", "string", "https://edge.promptx.xevos.dev", "Edge base URL."],
-						["cacheMaxAgeMs", "number", "60000", "How long a cached prompt is served fresh."],
-						["cacheStaleWhileRevalidateMs", "number", "60000", "Window after max-age to serve stale while refreshing."],
-						["requestTimeoutMs", "number", "10000", "Abort the fetch after this many milliseconds."],
-					]}
+					columns={["Variable", "Type", "Default", "Description"]}
+					rows={[["PROMPTX_API_KEY", "string", "—", "Required. Your team's API key."]]}
 				/>
 			</DocSection>
 

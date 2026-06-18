@@ -3,6 +3,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { useDeployments } from "@/hooks/use-deployments";
@@ -13,9 +14,25 @@ import { cn } from "@/lib/utils";
 import { useNavigationStore } from "@/stores/navigation-store";
 import { useVersionTagDialogStore } from "@/stores/version-tag-dialog-store";
 
+const LIVE_BADGE = "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+const LIVE_DOT = "bg-emerald-500";
+
 export default function VersionsPage() {
 	const { versions, setSelectedVersion, status, hasMore, loadMoreRef } = useVersions();
-	const { activeDeployment } = useDeployments();
+	const { activeDeployments } = useDeployments();
+
+	// Versions that are part of the active (live) deployment.
+	const deployedVersionIds = useMemo(() => {
+		const ids = new Set<string>();
+
+		for (const deployment of activeDeployments) {
+			for (const config of deployment.config) {
+				ids.add(config.versionId);
+			}
+		}
+
+		return ids;
+	}, [activeDeployments]);
 
 	const openTagDialog = useVersionTagDialogStore((state) => state.open);
 
@@ -45,6 +62,8 @@ export default function VersionsPage() {
 					// "draft" is an internal sentinel carried by promoted versions, not a user tag.
 					const userTag = version.tag && version.tag !== "draft" ? version.tag : null;
 
+					const isDeployed = deployedVersionIds.has(version._id);
+
 					return (
 						<Link
 							key={version._id}
@@ -54,16 +73,19 @@ export default function VersionsPage() {
 						>
 							<div className="flex items-center justify-between gap-3">
 								<div className="flex flex-wrap min-w-0 items-center gap-2">
-									<span className="inline-flex shrink-0 items-center rounded-full border px-4 py-1 text-xs font-medium">
-										v{version.sequence}
-									</span>
+									<span className="shrink-0 text-sm font-semibold text-muted-foreground">v{version.sequence}</span>
 
 									<span className="truncate text-xs font-medium rounded-full border px-2 py-1">
 										{userTag || "Untitled"}
 									</span>
-									{activeDeployment?.config.some((dep) => dep.versionId === version._id) && (
-										<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
-											<div className="size-1.5 rounded-full bg-emerald-500" />
+									{isDeployed && (
+										<span
+											className={cn(
+												"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+												LIVE_BADGE,
+											)}
+										>
+											<div className={cn("size-1.5 rounded-full", LIVE_DOT)} />
 											Live
 										</span>
 									)}

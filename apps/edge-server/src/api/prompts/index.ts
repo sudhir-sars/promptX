@@ -1,4 +1,4 @@
-import { type GetPromptResponse, isDeploymentEnv, type KVPromptConfig, promptKvKey } from "@promptx/shared";
+import { promptResponseSchema, isDeploymentEnv, type KVPromptConfig, promptKvKey } from "@promptx/shared";
 import { Hono } from "hono";
 import type { AppEnv } from "../../types";
 import { selectVariant } from "./utils";
@@ -36,17 +36,20 @@ app.get("/:identifier", async (c) => {
 
 	const selected = await selectVariant(identifier, variants, sessionId);
 
-	const response: GetPromptResponse = {
+	// Validate the response against the shared contract before sending it.
+	const response = promptResponseSchema.parse({
 		identifier,
 		env,
 		content: selected.content,
 		sequence: selected.sequence,
 		traffic: selected.traffic,
-	};
-
-	if (variants.length > 1) {
-		response.routing = sessionId ? { strategy: "user_sticky", identifier: sessionId } : { strategy: "default" };
-	}
+		routing:
+			variants.length > 1
+				? sessionId
+					? { strategy: "user_sticky", identifier: sessionId }
+					: { strategy: "default" }
+				: undefined,
+	});
 
 	return c.json(response, 200);
 });

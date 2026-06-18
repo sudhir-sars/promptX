@@ -1,16 +1,15 @@
 /**
- * Canonical deployment environments.
+ * Canonical fetch environments.
  *
- * Reconciles the three divergent definitions that existed across the repos:
- *   - SDK (published)  : production | staging | preview   ← `staging` was legacy
- *   - SDK (ztypes)     : production | development | preview
- *   - Edge             : production | development | preview
- *   - Convex           : production | preview | development
- *
- * The runtime (Edge) and persistence (Convex) agreed on these three, so they
- * are the source of truth. `staging` is intentionally dropped.
+ * Only two environments are meaningful at runtime:
+ *   - `production`  — served from the managed deployment (traffic split + rollback).
+ *                     A requested prompt version, if passed, is ignored.
+ *   - `development` — served straight from a version: the one named by the caller
+ *                     (`promptVersion`), or the live draft when none is given.
+ *                     This lets many developers test their own versions in
+ *                     parallel without a shared "dev deployment" slot.
  */
-export const DEPLOYMENT_ENVS = ["production", "preview", "development"] as const;
+export const DEPLOYMENT_ENVS = ["production", "development"] as const;
 
 export type DeploymentEnv = (typeof DEPLOYMENT_ENVS)[number];
 
