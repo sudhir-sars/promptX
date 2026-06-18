@@ -5,7 +5,6 @@ import {
 	DocPageWrapper,
 	DocParagraph,
 	DocSection,
-	InlineCode,
 	TerminalBlock,
 } from "../doc-primitives";
 
@@ -24,7 +23,7 @@ export default function NextjsContent() {
 			<DocDivider />
 
 			<DocSection id="installation" label="Setup" title="Installation">
-				<TerminalBlock commands="npm install @promptx/sdk" />
+				<TerminalBlock commands="npm install @xevos-ai/promptx" />
 
 				<DocParagraph className="mt-4">
 					PromptX works with both App Router and Pages Router. No Next.js-specific package is required.
@@ -35,34 +34,26 @@ export default function NextjsContent() {
 
 			<DocSection id="configuration" label="Configuration" title="Configuration">
 				<DocParagraph>
-					The SDK automatically reads <InlineCode>PROMPTX_API_KEY</InlineCode>. In most cases, that's all you need.
+					Create a single shared client in a module and reuse it across your server code. Pass your API key from an
+					environment variable.
 				</DocParagraph>
 
-				<CodeBlock className="mt-5" language="bash" filename=".env" code={`PROMPTX_API_KEY=px_live_xxxxxxxxx`} />
+				<CodeBlock className="mt-5" language="bash" filename=".env" code={`PROMPTX_API_KEY=xe_live_xxxxxxxxxx`} />
 
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
 					filename="lib/promptx.ts"
-					code={`import { PromptX } from "@promptx/sdk";
+					code={`import { PromptXClient } from "@xevos-ai/promptx";
 
-export const promptx = new PromptX();`}
-				/>
-
-				<DocParagraph className="mt-4">To override the automatically detected API key:</DocParagraph>
-
-				<CodeBlock
-					className="mt-5"
-					language="typescript"
-					code={`import { PromptX } from "@promptx/sdk";
-
-export const promptx = new PromptX({
-  apiKey: process.env.MY_PROMPTX_API_KEY!,
+export const promptx = new PromptXClient({
+  apiKey: process.env.PROMPTX_API_KEY!,
 });`}
 				/>
 
 				<Callout type="note" className="mt-4">
-					When no API key is provided, PromptX automatically uses <InlineCode>PROMPTX_API_KEY</InlineCode>.
+					Instantiate the client once at module scope. Its in-memory cache is per-instance, so a shared client lets
+					Server Components and Route Handlers reuse cached prompts.
 				</Callout>
 			</DocSection>
 
@@ -83,7 +74,7 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   const { message, chatId } = await req.json();
 
-  const prompt = await promptx.get("chat-assistant", {
+  const prompt = await promptx.getPrompt("chat-assistant", {
     sessionId: chatId,
   });
 
@@ -126,7 +117,7 @@ export async function POST(req: Request) {
 import { promptx } from "@/lib/promptx";
 
 export async function generateReply(message: string) {
-  const prompt = await promptx.get("chat-assistant");
+  const prompt = await promptx.getPrompt("chat-assistant");
 
   return openai.chat.completions.create({
     model: "gpt-4o",
@@ -161,7 +152,7 @@ export const runtime = "edge";
 export async function POST(req: Request) {
   const { message, chatId } = await req.json();
 
-  const prompt = await promptx.get("chat-assistant", {
+  const prompt = await promptx.getPrompt("chat-assistant", {
     sessionId: chatId,
   });
 

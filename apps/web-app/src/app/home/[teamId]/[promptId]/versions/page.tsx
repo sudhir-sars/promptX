@@ -1,4 +1,4 @@
-// app/home/[projectId]/[promptId]/versions/page.tsx
+// app/home/[teamId]/[promptId]/versions/page.tsx
 
 "use client";
 

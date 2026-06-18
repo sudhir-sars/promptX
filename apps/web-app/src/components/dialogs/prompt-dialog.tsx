@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 import { usePrompts } from "@/hooks/use-prompt";
 import { slugify } from "@/lib/utils";
@@ -21,11 +20,9 @@ export function PromptDialog() {
 		promptId,
 
 		name,
-		description,
 
 		setOpen,
 		setName,
-		setDescription,
 
 		reset,
 	} = usePromptDialogStore();
@@ -65,7 +62,7 @@ export function PromptDialog() {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogContent className="rounded-2xl shadow-2xl">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>{mode === "create" ? "Create Prompt" : "Edit Prompt"}</DialogTitle>
 
@@ -82,24 +79,13 @@ export function PromptDialog() {
 						className="rounded-full px-4 placeholder:text-xs"
 					/>
 
-					<Textarea
-						value={description}
-						placeholder="Describe what this prompt does..."
-						onChange={(e) => setDescription(e.target.value)}
-						className="min-h-24 resize-none px-4 placeholder:text-xs"
-					/>
-
 					{mode === "create" && slugPreview && (
 						<div className="rounded-2xl border bg-muted/20 px-4 py-3">
-							<div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-								Slug / Identifier
+							<div className="text-xs text-muted-foreground">
+								<span className="font-medium">Slug:</span> Used by the API & SDK. Cannot be changed later.
 							</div>
 
-							<p className="mt-1 break-all font-mono text-sm font-medium">{slugPreview}</p>
-
-							<p className="mt-2 text-xs text-muted-foreground">
-								This slug/identifier is used to retrieve your prompt through the API and cannot be changed later.
-							</p>
+							<p className="mt-1 break-all font-mono">{slugPreview}</p>
 						</div>
 					)}
 
@@ -107,7 +93,7 @@ export function PromptDialog() {
 						variant="outline"
 						onClick={handleSubmit}
 						disabled={!name.trim() || isSubmitting}
-						className="rounded-full text-[12.5px]"
+						className="rounded-full"
 					>
 						{isSubmitting
 							? mode === "create"

@@ -77,7 +77,7 @@ export default function ReleasesContent() {
 							<li>• TypeScript-first SDK design</li>
 							<li>• Environment variable configuration</li>
 							<li>
-								• Standardized API key format using <InlineCode>px_live_</InlineCode>
+								• Standardized API key format using <InlineCode>xe_live_</InlineCode>
 							</li>
 							<li>• Framework-friendly integration patterns</li>
 						</ul>

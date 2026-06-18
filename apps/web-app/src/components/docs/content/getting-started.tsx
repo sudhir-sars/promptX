@@ -65,9 +65,9 @@ export default function GettingStartedContent() {
 			<DocSection id="install" label="Step 1" title="Install the SDK">
 				<DocParagraph>Install the PromptX SDK using your preferred package manager.</DocParagraph>
 				<div className="mt-5 flex flex-col gap-3">
-					<TerminalBlock commands="npm install @promptx/sdk" />
-					<TerminalBlock commands="yarn add @promptx/sdk" />
-					<TerminalBlock commands="pnpm add @promptx/sdk" />
+					<TerminalBlock commands="npm install @xevos-ai/promptx" />
+					<TerminalBlock commands="yarn add @xevos-ai/promptx" />
+					<TerminalBlock commands="pnpm add @xevos-ai/promptx" />
 				</div>
 			</DocSection>
 
@@ -78,7 +78,7 @@ export default function GettingStartedContent() {
 					Create an API key from the PromptX dashboard under <InlineCode>Settings → API Keys</InlineCode>, then store it
 					in your environment variables.
 				</DocParagraph>
-				<CodeBlock className="mt-5" filename=".env" code={`PROMPTX_API_KEY=px_live_...`} />
+				<CodeBlock className="mt-5" filename=".env" code={`PROMPTX_API_KEY=xe_live_...`} />
 				<Callout type="warning" className="mt-4">
 					Never commit your API key to version control. Add <InlineCode>.env</InlineCode> to your{" "}
 					<InlineCode>.gitignore</InlineCode>.
@@ -95,11 +95,11 @@ export default function GettingStartedContent() {
 					className="mt-5"
 					language="typescript"
 					filename="lib/promptx.ts"
-					code={`import { PromptX } from "@promptx/sdk";
+					code={`import { PromptXClient } from "@xevos-ai/promptx";
 
-export const promptx = new PromptX({
+export const promptx = new PromptXClient({
   apiKey: process.env.PROMPTX_API_KEY!,
-  projectId: process.env.PROMPTX_PROJECT_ID!,
+  // env defaults to "production"
 });`}
 				/>
 			</DocSection>
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
   const { message } = await req.json();
 
   // Fetch the active deployment of "checkout-assistant"
-  const prompt = await promptx.get("checkout-assistant");
+  const prompt = await promptx.getPrompt("checkout-assistant");
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -135,8 +135,8 @@ export async function POST(req: Request) {
 }`}
 				/>
 				<Callout type="note" className="mt-4">
-					<InlineCode>promptx.get()</InlineCode> automatically resolves traffic-split deployments. If you have a canary
-					deployment at 10%, 10% of calls will receive the canary version.
+					<InlineCode>promptx.getPrompt()</InlineCode> automatically resolves traffic-split deployments. If you have a
+					canary deployment at 10%, 10% of sessions will receive the canary version.
 				</Callout>
 			</DocSection>
 

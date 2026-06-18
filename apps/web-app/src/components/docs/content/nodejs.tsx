@@ -6,6 +6,7 @@ import {
 	DocParagraph,
 	DocSection,
 	InlineCode,
+	PropTable,
 	TerminalBlock,
 } from "../doc-primitives";
 
@@ -23,47 +24,56 @@ export default function NodejsContent() {
 			<DocDivider />
 
 			<DocSection id="installation" label="Setup" title="Installation">
-				<TerminalBlock commands="npm install @promptx/sdk" />
+				<TerminalBlock commands="npm install @xevos-ai/promptx" />
 
-				<DocParagraph className="mt-4">PromptX works in any Node.js runtime.</DocParagraph>
+				<DocParagraph className="mt-4">PromptX works in any Node.js 18+ runtime.</DocParagraph>
 			</DocSection>
 
 			<DocDivider />
 
 			<DocSection id="configuration" label="Configuration" title="Configuration">
 				<DocParagraph>
-					The SDK automatically reads <InlineCode>PROMPTX_API_KEY</InlineCode> from your environment.
+					Store your API key in an environment variable and pass it to the client constructor.
 				</DocParagraph>
 
-				<CodeBlock className="mt-5" language="bash" filename=".env" code={`PROMPTX_API_KEY=px_live_xxxxxxxxx`} />
+				<CodeBlock
+					className="mt-5"
+					language="bash"
+					filename=".env"
+					code={`PROMPTX_API_KEY=xe_live_xxxxxxxxxx_<teamId>.xxxxxxxx`}
+				/>
 
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
 					filename="promptx.ts"
-					code={`import { PromptX } from "@promptx/sdk";
+					code={`import { PromptXClient } from "@xevos-ai/promptx";
 
-export const promptx = new PromptX();`}
+export const promptx = new PromptXClient({
+  apiKey: process.env.PROMPTX_API_KEY!,
+});`}
 				/>
 
 				<Callout type="note" className="mt-4">
-					When no API key is provided, PromptX automatically uses <InlineCode>PROMPTX_API_KEY</InlineCode>.
+					<InlineCode>apiKey</InlineCode> is the only required option. <InlineCode>env</InlineCode> defaults to{" "}
+					<InlineCode>production</InlineCode>; cache and timeout options are documented under Config Options.
 				</Callout>
 			</DocSection>
 
 			<DocDivider />
 
 			<DocSection id="getting-started" label="Usage" title="Get a Prompt">
-				<DocParagraph>Fetch the latest version of a prompt.</DocParagraph>
+				<DocParagraph>Resolve the active deployment of a prompt for the client's environment.</DocParagraph>
 
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`const prompt = await promptx.get(
+					code={`const prompt = await promptx.getPrompt(
   "chat-assistant"
 );
 
-console.log(prompt.content);`}
+console.log(prompt.content);   // string
+console.log(prompt.sequence);  // version number`}
 				/>
 			</DocSection>
 
@@ -75,7 +85,7 @@ console.log(prompt.content);`}
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`const prompt = await promptx.get(
+					code={`const prompt = await promptx.getPrompt(
   "chat-assistant"
 );
 
@@ -104,7 +114,7 @@ const completion =
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`const prompt = await promptx.get(
+					code={`const prompt = await promptx.getPrompt(
   "chat-assistant",
   {
     sessionId: chatId,
@@ -113,8 +123,55 @@ const completion =
 				/>
 
 				<Callout type="note" className="mt-4">
-					Without a session ID, PromptX cannot consistently assign the same session to the same variant.
+					Without a session ID, PromptX cannot consistently assign the same session to the same variant. It instead
+					serves the variant with the highest configured traffic allocation.
 				</Callout>
+			</DocSection>
+
+			<DocDivider />
+
+			<DocSection id="error-handling" label="Errors" title="Error handling">
+				<DocParagraph>
+					The SDK throws <InlineCode>PromptFetchError</InlineCode> when the edge returns a non-2xx response. It extends{" "}
+					<InlineCode>PromptxError</InlineCode> and exposes the HTTP <InlineCode>status</InlineCode>.
+				</DocParagraph>
+
+				<CodeBlock
+					className="mt-5"
+					language="typescript"
+					code={`import { PromptFetchError } from "@xevos-ai/promptx";
+
+try {
+  const prompt = await promptx.getPrompt("chat-assistant");
+} catch (error) {
+  if (error instanceof PromptFetchError) {
+    console.error(error.status, error.message);
+    return FALLBACK_PROMPT;
+  }
+  throw error;
+}`}
+				/>
+			</DocSection>
+
+			<DocDivider />
+
+			<DocSection id="config" label="Reference" title="Config Options">
+				<DocParagraph>
+					The <InlineCode>PromptXClient</InlineCode> constructor accepts the following options.
+				</DocParagraph>
+
+				<PropTable
+					className="mt-5"
+					columns={["Option", "Type", "Default", "Description"]}
+					rows={[
+						["apiKey", "string", "—", "Required. Your team's API key."],
+						["env", "string", '"production"', "Target environment: production, preview, or development."],
+						["baseUrl", "string", "https://edge.promptx.xevos.dev", "Edge base URL."],
+						["cacheMaxAgeMs", "number", "60000", "How long a cached prompt is served fresh."],
+						["cacheStaleWhileRevalidateMs", "number", "60000", "Window after max-age to serve stale while refreshing."],
+						["requestTimeoutMs", "number", "10000", "Abort the fetch after this many milliseconds."],
+					]}
+				/>
 			</DocSection>
 
 			<DocDivider />

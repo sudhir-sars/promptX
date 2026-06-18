@@ -22,14 +22,14 @@ export default function ExamplesContent() {
 			<DocSection id="basic-fetch" label="Pattern" title="Basic prompt fetch">
 				<DocParagraph>
 					The simplest integration — fetch a deployed prompt and pass it to your LLM provider. The SDK resolves the
-					currently active version for the given environment automatically.
+					currently active version for the client's environment automatically.
 				</DocParagraph>
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
 					code={`import { promptx } from "@/lib/promptx";
 
-const prompt = await promptx.get("support-agent");
+const prompt = await promptx.getPrompt("support-agent");
 
 const completion = await openai.chat.completions.create({
   model: "gpt-4o",
@@ -39,42 +39,17 @@ const completion = await openai.chat.completions.create({
   ],
 });`}
 				/>
-			</DocSection>
-			<DocDivider />
-			<DocSection id="template-variables" label="Pattern" title="Template variables">
-				<DocParagraph>
-					PromptX supports Mustache-style template variables. Define placeholders in your prompt and resolve them at
-					fetch time.
-				</DocParagraph>
-				<CodeBlock
-					className="mt-5"
-					language="text"
-					filename="Prompt content in dashboard"
-					code={`You are a {{role}} assistant for {{company_name}}.
-Respond in {{language}}.
-Maximum response length: {{max_tokens}} tokens.`}
-				/>
-				<CodeBlock
-					className="mt-4"
-					language="typescript"
-					filename="Application code"
-					code={`const prompt = await promptx.get("support-agent", {
-  variables: {
-    role: "customer support",
-    company_name: "Acme Corp",
-    language: "English",
-    max_tokens: "500",
-  },
-});
-
-// prompt.content is the fully resolved string`}
-				/>
+				<Callout type="note" className="mt-4">
+					The resolved prompt exposes <InlineCode>identifier</InlineCode>, <InlineCode>env</InlineCode>,{" "}
+					<InlineCode>content</InlineCode>, <InlineCode>sequence</InlineCode> (the version number), and{" "}
+					<InlineCode>traffic</InlineCode>. Compose template variables in your own application code.
+				</Callout>
 			</DocSection>
 			<DocDivider />
 			<DocSection id="ab-testing" label="Pattern" title="A/B testing with traffic splits">
 				<DocParagraph>
 					PromptX supports percentage-based traffic splitting between deployed prompt versions. To ensure accurate
-					experiment results, you must provide a stable unique identifier via
+					experiment results, provide a stable unique identifier via
 					<InlineCode>sessionId</InlineCode>. This can be a user ID, chat ID, conversation ID, session ID, or any
 					identifier that uniquely represents the current user or conversation.
 				</DocParagraph>
@@ -87,44 +62,69 @@ Maximum response length: {{max_tokens}} tokens.`}
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`const prompt = await promptx.get("checkout-assistant", {
+					code={`const prompt = await promptx.getPrompt("checkout-assistant", {
   // Any stable unique identifier
   sessionId: chat.id,
 });
 
-// User will consistently receive the same variant
+// The same session consistently receives the same variant
 // throughout the experiment`}
 				/>
 
 				<Callout type="note" className="mt-4">
-					Traffic split percentages are configured in the deployment settings. Once a<InlineCode>sessionId</InlineCode>{" "}
-					is provided, PromptX automatically performs sticky allocation and ensures the same user or conversation
-					remains on the same variant.
+					Traffic split percentages are configured in the deployment settings. Once a <InlineCode>sessionId</InlineCode>{" "}
+					is provided, PromptX performs deterministic sticky allocation so the same user or conversation remains on the
+					same variant.
+				</Callout>
+			</DocSection>
+			<DocDivider />
+
+			<DocSection id="caching" label="Pattern" title="Caching and forced refresh">
+				<DocParagraph>
+					The client keeps an in-memory, stale-while-revalidate cache. Fresh prompts are served from memory; once a
+					cached entry passes its max-age it is still served while a background refresh runs. Pass{" "}
+					<InlineCode>forceRefresh</InlineCode> to bypass the cache and fetch the latest deployment immediately.
+				</DocParagraph>
+				<CodeBlock
+					className="mt-5"
+					language="typescript"
+					code={`// Served from cache when fresh, refreshed in the background when stale
+const prompt = await promptx.getPrompt("support-agent");
+
+// Always hit the edge, ignoring any cached value
+const latest = await promptx.getPrompt("support-agent", {
+  forceRefresh: true,
+});`}
+				/>
+				<Callout type="note" className="mt-4">
+					Tune the cache with <InlineCode>cacheMaxAgeMs</InlineCode> and{" "}
+					<InlineCode>cacheStaleWhileRevalidateMs</InlineCode> on the client constructor. Both default to 60000ms.
 				</Callout>
 			</DocSection>
 			<DocDivider />
 
 			<DocSection id="error-handling" label="Pattern" title="Error handling and fallbacks">
 				<DocParagraph>
-					The SDK throws typed errors for common failure cases. Always handle errors gracefully, especially in
-					production code paths.
+					The SDK throws typed errors for failed fetches. Always handle errors gracefully, especially in production code
+					paths.
 				</DocParagraph>
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
 					code={`import { promptx } from "@/lib/promptx";
-import { PromptXError, PromptNotFoundError } from "@promptx/sdk";
+import { PromptFetchError, PromptxError } from "@xevos-ai/promptx";
 
 try {
-  const prompt = await promptx.get("checkout-assistant");
+  const prompt = await promptx.getPrompt("checkout-assistant");
 } catch (error) {
-  if (error instanceof PromptNotFoundError) {
-    console.error("Prompt not found:", error.slug);
+  if (error instanceof PromptFetchError) {
+    // HTTP-level failure from the edge (404, 401, 503, ...)
+    console.error("PromptX fetch failed:", error.status, error.message);
     return FALLBACK_PROMPT;
   }
 
-  if (error instanceof PromptXError) {
-    console.error("PromptX API error:", error.message);
+  if (error instanceof PromptxError) {
+    console.error("PromptX error:", error.message);
     return FALLBACK_PROMPT;
   }
 
@@ -133,40 +133,9 @@ try {
 				/>
 				<Callout type="warning" className="mt-4">
 					Always have a fallback prompt for critical code paths. Network issues and API outages happen — your
-					application should degrade gracefully.
+					application should degrade gracefully. <InlineCode>PromptFetchError</InlineCode> extends{" "}
+					<InlineCode>PromptxError</InlineCode> and carries the HTTP <InlineCode>status</InlineCode>.
 				</Callout>
-			</DocSection>
-			<DocDivider />
-
-			<DocSection id="middleware" label="Pattern" title="Middleware and hooks">
-				<DocParagraph>
-					Register middleware functions to intercept, transform, or log prompt resolution. Useful for observability,
-					feature flags, and dynamic overrides.
-				</DocParagraph>
-				<CodeBlock
-					className="mt-5"
-					language="typescript"
-					code={`// Log every prompt resolution
-promptx.use(async (ctx, next) => {
-  const start = performance.now();
-  await next();
-  const ms = (performance.now() - start).toFixed(1);
-  console.log(\`[promptx] \${ctx.slug} → v\${ctx.result.version} (\${ms}ms)\`);
-});
-
-// Override prompts in development
-promptx.use(async (ctx, next) => {
-  if (process.env.NODE_ENV === "development" && ctx.slug === "checkout-assistant") {
-    ctx.result = {
-      content: "You are a test assistant. Respond with 'Hello, test!'",
-      version: 0,
-      slug: ctx.slug,
-    };
-    return;
-  }
-  await next();
-});`}
-				/>
 			</DocSection>
 		</DocPageWrapper>
 	);

@@ -17,19 +17,27 @@ export default function MigrationContent() {
 	return (
 		<DocPageWrapper>
 			<div>
-				<h1 className="text-[22px] font-semibold tracking-tight text-foreground/90 md:text-[26px]">Migration Guide</h1>
+				<h1 className="text-[22px] font-semibold tracking-tight text-foreground/90 md:text-[26px]">
+					Migration Guide
+				</h1>
 				<DocParagraph className="mt-4 max-w-lg">
-					Move from hardcoded prompts to PromptX. This guide walks through a typical migration with practical examples
-					and a verification checklist.
+					Move from hardcoded prompts to PromptX. This guide walks through a
+					typical migration with practical examples and a verification
+					checklist.
 				</DocParagraph>
 			</div>
 
 			<DocDivider />
 
-			<DocSection id="from-hardcoded" label="Migration path" title="From hardcoded prompts">
+			<DocSection
+				id="from-hardcoded"
+				label="Migration path"
+				title="From hardcoded prompts"
+			>
 				<DocParagraph>
-					Most teams start with prompts embedded directly in application code. The migration is straightforward: extract
-					each prompt into PromptX, then replace the hardcoded string with an SDK call.
+					Most teams start with prompts embedded directly in application code.
+					The migration is straightforward: extract each prompt into PromptX,
+					then replace the hardcoded string with an SDK call.
 				</DocParagraph>
 
 				<DocH3 className="mt-5">Before</DocH3>
@@ -55,7 +63,7 @@ const response = await openai.chat.completions.create({
 					language="typescript"
 					code={`import { promptx } from "@/lib/promptx";
 
-const prompt = await promptx.get("checkout-assistant");
+const prompt = await promptx.getPrompt("checkout-assistant");
 
 const response = await openai.chat.completions.create({
   model: "gpt-4o",
@@ -67,14 +75,18 @@ const response = await openai.chat.completions.create({
 				/>
 
 				<Callout type="tip" className="mt-4">
-					Start by migrating your most frequently changed prompts first. They benefit the most from version control and
-					no-deploy updates.
+					Start by migrating your most frequently changed prompts first. They
+					benefit the most from version control and no-deploy updates.
 				</Callout>
 			</DocSection>
 
 			<DocDivider />
 
-			<DocSection id="step-by-step" label="Process" title="Step-by-step migration">
+			<DocSection
+				id="step-by-step"
+				label="Process"
+				title="Step-by-step migration"
+			>
 				<StepList
 					steps={[
 						{
@@ -82,8 +94,10 @@ const response = await openai.chat.completions.create({
 							content: (
 								<>
 									Search your codebase for all system prompts. Common patterns:{" "}
-									<InlineCode>role: &quot;system&quot;</InlineCode>, <InlineCode>system_prompt</InlineCode>,{" "}
-									<InlineCode>SYSTEM_PROMPT</InlineCode>. Document each one with its location and purpose.
+									<InlineCode>role: &quot;system&quot;</InlineCode>,{" "}
+									<InlineCode>system_prompt</InlineCode>,{" "}
+									<InlineCode>SYSTEM_PROMPT</InlineCode>. Document each one with
+									its location and purpose.
 								</>
 							),
 						},
@@ -99,12 +113,13 @@ const response = await openai.chat.completions.create({
 						},
 						{
 							title: "Install the SDK",
-							content: "Add the PromptX SDK to your project and configure the client with your API key.",
+							content:
+								"Add the PromptX SDK to your project and configure the client with your API key.",
 						},
 						{
 							title: "Replace hardcoded strings",
 							content:
-								"Replace each hardcoded prompt with a promptx.get() call. Deploy and verify each prompt one at a time.",
+								"Replace each hardcoded prompt with a promptx.getPrompt() call. Deploy and verify each prompt one at a time.",
 						},
 						{
 							title: "Remove dead code",
@@ -117,7 +132,11 @@ const response = await openai.chat.completions.create({
 
 			<DocDivider />
 
-			<DocSection id="verification" label="Checklist" title="Migration verification">
+			<DocSection
+				id="verification"
+				label="Checklist"
+				title="Migration verification"
+			>
 				<DocList
 					items={[
 						"All prompts created in PromptX with correct content",

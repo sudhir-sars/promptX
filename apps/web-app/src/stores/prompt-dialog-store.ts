@@ -11,7 +11,6 @@ type PromptDialogStore = {
 	promptId: string | undefined;
 
 	name: string;
-	description: string;
 
 	openCreate: () => void;
 
@@ -20,8 +19,6 @@ type PromptDialogStore = {
 	setOpen: (open: boolean) => void;
 
 	setName: (name: string) => void;
-
-	setDescription: (description: string) => void;
 
 	reset: () => void;
 };
@@ -34,7 +31,6 @@ const initialState = {
 	promptId: undefined,
 
 	name: "",
-	description: "",
 };
 
 export const usePromptDialogStore = create<PromptDialogStore>((set) => ({
@@ -49,10 +45,9 @@ export const usePromptDialogStore = create<PromptDialogStore>((set) => ({
 			promptId: undefined,
 
 			name: "",
-			description: "",
 		}),
 
-	openEdit: (promptId, name, description) =>
+	openEdit: (promptId, name) =>
 		set({
 			isOpen: true,
 
@@ -61,8 +56,6 @@ export const usePromptDialogStore = create<PromptDialogStore>((set) => ({
 			promptId,
 
 			name,
-
-			description: description ?? "",
 		}),
 
 	setOpen: (open) =>
@@ -73,11 +66,6 @@ export const usePromptDialogStore = create<PromptDialogStore>((set) => ({
 	setName: (name) =>
 		set({
 			name,
-		}),
-
-	setDescription: (description) =>
-		set({
-			description,
 		}),
 
 	reset: () => set(initialState),

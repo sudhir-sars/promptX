@@ -71,7 +71,7 @@ const faq = [
 	},
 	{
 		q: "What counts as an API call?",
-		a: "Each call to promptx.get() counts as one API call. Cached responses (served from the SDK's in-memory cache) do not count. Version management operations (create, list, diff) are counted separately and have generous limits on all plans.",
+		a: "Each call to promptx.getPrompt() counts as one API call. Cached responses (served from the SDK's in-memory cache) do not count. Version management operations (create, list, diff) are counted separately and have generous limits on all plans.",
 	},
 	{
 		q: "Do you offer annual billing?",

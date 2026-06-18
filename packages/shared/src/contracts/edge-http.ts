@@ -3,7 +3,7 @@ import type { DeploymentEnv } from "../types/env";
 /**
  * The HTTP wire contract between the client SDK and the Edge Worker.
  *
- * Single source of truth. Both `@xevos/promptx` (SDK) and `apps/edge`
+ * Single source of truth. Both `@xevos-ai/promptx` (SDK) and `apps/edge-server`
  * import these types so the request the SDK sends and the response the Edge
  * returns can never drift apart without a compile error.
  *

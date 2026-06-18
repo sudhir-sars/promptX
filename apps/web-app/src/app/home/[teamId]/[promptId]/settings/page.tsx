@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { CopyIcon, EditIcon, TrashIcon } from "@/components/ui/icons";
+import { EditIcon, TrashIcon } from "@/components/ui/icons";
 import { usePrompts } from "@/hooks/use-prompt";
 import { usePromptDialogStore } from "@/stores/prompt-dialog-store";
 
@@ -16,7 +16,7 @@ export default function SettingsPage() {
 	if (!prompt) return null;
 
 	return (
-		<div className="h-full flex-1 space-y-7  overflow-y-auto no-scrollbar px-6 py-20 md:px-10 lg:px-16 transition-all duration-300 ease-in-out">
+		<div className="h-full flex-1 space-y-7 overflow-y-auto no-scrollbar px-6 py-20 transition-all duration-300 ease-in-out md:px-10 lg:px-16">
 			<div className="mb-8">
 				<h1 className="text-xl font-semibold">Prompt Settings</h1>
 
@@ -27,8 +27,9 @@ export default function SettingsPage() {
 				<section className="overflow-hidden rounded-4xl border">
 					<div className="p-5">
 						<div>
-							<div className="w-full flex justify-between">
+							<div className="flex w-full justify-between">
 								<div className="text-xs text-muted-foreground">Name</div>
+
 								<Button size="sm" variant="outline" onClick={() => openEdit(prompt._id, prompt.name)}>
 									<EditIcon />
 									Rename
@@ -42,34 +43,28 @@ export default function SettingsPage() {
 
 				<section className="overflow-hidden rounded-4xl border">
 					<div className="p-5">
-						<div className="flex w-full items-start justify-between gap-3">
-							<div className="min-w-0">
-								<div className="text-xs text-muted-foreground">Slug / Identifier</div>
+						<div className="text-xs text-muted-foreground">Identifier</div>
 
-								<p className="mt-1 break-all font-mono text-sm font-medium">{prompt.slug}</p>
-							</div>
-
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={async () => {
-									await navigator.clipboard.writeText(prompt.slug);
-									toast.success("Slug copied to clipboard");
-								}}
-							>
-								<CopyIcon />
-								Copy
-							</Button>
-						</div>
+						<button
+							type="button"
+							className="mt-3 w-full cursor-grab rounded-2xl border bg-muted/30 p-4 text-left transition-colors hover:bg-muted/50 active:cursor-grabbing"
+							onClick={async () => {
+								await navigator.clipboard.writeText(prompt.slug);
+								toast.success("Slug copied to clipboard");
+							}}
+						>
+							<p className="break-all font-mono text-sm font-medium">{prompt.slug}</p>
+						</button>
 
 						<p className="mt-3 text-xs text-muted-foreground">
-							Used to retrieve this prompt through the API. This value is immutable after creation.
+							Use <span className="font-mono text-foreground">{prompt.slug}</span> when retrieving this prompt through
+							the API or SDK. This value cannot be changed after creation.
 						</p>
 					</div>
 				</section>
 
 				<section className="overflow-hidden rounded-4xl border border-destructive/15">
-					<div className="  px-5 py-3">
+					<div className="px-5 py-3">
 						<h2 className="text-sm font-medium text-destructive">Danger Zone</h2>
 					</div>
 

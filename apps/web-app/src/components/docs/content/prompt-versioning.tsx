@@ -38,7 +38,7 @@ export default function PromptVersioningContent() {
 						<DocParagraph className="mt-2">
 							Each version has a monotonically increasing integer ID (<InlineCode>v0</InlineCode>,{" "}
 							<InlineCode>v1</InlineCode>, <InlineCode>v2</InlineCode>…) and an optional human-readable tag (for
-							example, <InlineCode>production</InlineCode>, <InlineCode>staging</InlineCode>, or{" "}
+							example, <InlineCode>production</InlineCode>, <InlineCode>preview</InlineCode>, or{" "}
 							<InlineCode>experiment-a</InlineCode>). The integer is assigned automatically. Tags are optional but
 							strongly recommended.
 						</DocParagraph>

@@ -24,12 +24,15 @@ export default function AuthenticationContent() {
 
 			<DocSection id="api-key" label="Credentials" title="API key">
 				<DocParagraph>
-					Your API key is used to authenticate requests made through the PromptX SDK. You can view or regenerate your
-					key from the dashboard at any time.
+					Your API key authenticates requests made through the PromptX SDK or the REST API. Keys are scoped to a single
+					team and use the format <InlineCode>xe_live_&lt;keyId&gt;_&lt;teamId&gt;.&lt;secret&gt;</InlineCode>. The
+					secret is shown only once at creation — store it immediately. You can create or revoke keys from the dashboard
+					at any time.
 				</DocParagraph>
 
 				<Callout type="warning" className="mt-4">
-					Keep your API key secret. Anyone with access to the key can make requests on behalf of your PromptX account.
+					Keep your API key secret. Anyone with access to the key can resolve prompts on behalf of your team. PromptX
+					stores only a hash of the secret, so a lost key cannot be recovered — revoke it and create a new one.
 				</Callout>
 			</DocSection>
 
@@ -43,7 +46,7 @@ export default function AuthenticationContent() {
 				<CodeBlock
 					className="mt-5"
 					filename=".env.local"
-					code={`PROMPTX_API_KEY=px_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`}
+					code={`PROMPTX_API_KEY=xe_live_xxxxxxxxxx_<teamId>.xxxxxxxxxxxxxxxx`}
 				/>
 			</DocSection>
 
@@ -51,21 +54,18 @@ export default function AuthenticationContent() {
 
 			<DocSection id="sdk-auth" label="SDK" title="SDK authentication">
 				<DocParagraph>
-					By default, the SDK automatically reads the API key from the <InlineCode>PROMPTX_API_KEY</InlineCode>{" "}
-					environment variable.
+					Pass your API key to the client constructor. Read it from an environment variable rather than hardcoding it.
 				</DocParagraph>
 
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`import { PromptX } from "@promptx/sdk";
+					code={`import { PromptXClient } from "@xevos-ai/promptx";
 
-const promptx = new PromptX();
-
-// Or explicitly:
-
-const promptx = new PromptX({
+const promptx = new PromptXClient({
   apiKey: process.env.PROMPTX_API_KEY!,
+  // Optional: target a non-production environment
+  // env: "preview",
 });`}
 				/>
 			</DocSection>

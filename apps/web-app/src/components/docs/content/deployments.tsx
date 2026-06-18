@@ -27,8 +27,8 @@ export default function DeploymentsContent() {
 			<DocSection id="deployment-model" label="Concepts" title="The deployment model">
 				<DocParagraph>
 					A deployment determines which version is served when your application calls{" "}
-					<InlineCode>promptx.get("checkout-assistant")</InlineCode>. You can deploy a single version, run an A/B test
-					between multiple versions, or allocate traffic across several versions to control rollout behavior.
+					<InlineCode>promptx.getPrompt("checkout-assistant")</InlineCode>. You can deploy a single version, run an A/B
+					test between multiple versions, or allocate traffic across several versions to control rollout behavior.
 				</DocParagraph>
 			</DocSection>
 			<DocDivider />
@@ -52,7 +52,7 @@ export default function DeploymentsContent() {
 				<CodeBlock
 					className="mt-4"
 					language="typescript"
-					code={`const prompt = await promptx.get("checkout-assistant", {
+					code={`const prompt = await promptx.getPrompt("checkout-assistant", {
   sessionId: chat.id,
 });`}
 				/>
@@ -84,8 +84,7 @@ export default function DeploymentsContent() {
 						},
 						{
 							title: "Monitor",
-							content:
-								"Watch the Observability tab for error rates, latency, and custom metrics. Compare against the previous version.",
+							content: "Open the prompt's Analytics view to review activity and compare against the previous version.",
 						},
 					]}
 				/>

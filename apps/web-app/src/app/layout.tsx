@@ -19,9 +19,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "PromptX — AI Prompt Management Platform",
+	title: {
+		default: "PromptX by Xevos",
+		template: "%s | PromptX",
+	},
+
 	description:
-		"Version control, instant rollbacks, and gradual rollouts for every prompt in production. Manage the entire prompt lifecycle without code deploys.",
+		"Deploy, version, and manage AI prompts at the edge. Built by Xevos for reliable prompt delivery in production.",
+
+	applicationName: "PromptX",
+
+	icons: {
+		icon: [
+			{ url: "/favicon.ico" },
+			{ url: "/favicon.svg", type: "image/svg+xml" },
+			{ url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+		],
+		apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+	},
+
+	manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
