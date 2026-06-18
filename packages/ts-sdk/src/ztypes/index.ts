@@ -9,8 +9,6 @@ export interface GetPromptOptions {
 	 * routing across a deployment's variants.
 	 */
 	sessionId?: string;
-	/** Production only: bypass the cache and fetch fresh from the edge. */
-	forceRefresh?: boolean;
 	/**
 	 * Development only: the prompt version to resolve (the version's name). When
 	 * omitted, the live draft (your latest edits) is served. Ignored in production.

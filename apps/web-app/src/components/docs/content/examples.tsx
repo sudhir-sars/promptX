@@ -79,22 +79,16 @@ const completion = await openai.chat.completions.create({
 			</DocSection>
 			<DocDivider />
 
-			<DocSection id="caching" label="Pattern" title="Caching and forced refresh">
+			<DocSection id="caching" label="Pattern" title="Caching">
 				<DocParagraph>
 					The client keeps an in-memory, stale-while-revalidate cache. Fresh prompts are served from memory; once a
-					cached entry passes its max-age it is still served while a background refresh runs. Pass{" "}
-					<InlineCode>forceRefresh</InlineCode> to bypass the cache and fetch the latest deployment immediately.
+					cached entry passes its max-age it is still served while a background refresh runs.
 				</DocParagraph>
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
 					code={`// Served from cache when fresh, refreshed in the background when stale
-const prompt = await promptx.getPrompt("support-agent");
-
-// Always hit the edge, ignoring any cached value
-const latest = await promptx.getPrompt("support-agent", {
-  forceRefresh: true,
-});`}
+const prompt = await promptx.getPrompt("support-agent");`}
 				/>
 				<Callout type="note" className="mt-4">
 					Caching is built in and zero-config: each prompt is served fresh for 60s, then served stale for a further

@@ -51,24 +51,21 @@ class PromptXClient {
 			return this.fetchDevPrompt(identifier, options?.promptVersion);
 		}
 
-		const forceRefresh = options?.forceRefresh ?? false;
 		const sessionId = options?.sessionId;
 		const cacheKey = `${this.env}:${identifier}:${sessionId ?? "default"}`;
 
-		if (!forceRefresh) {
-			const cached = this.cache.get(cacheKey);
+		const cached = this.cache.get(cacheKey);
 
-			if (cached !== undefined) {
-				if (cached.isStale) {
-					void this.revalidate(cacheKey, identifier, sessionId).catch(() => {});
-				}
-				return cached.value;
+		if (cached !== undefined) {
+			if (cached.isStale) {
+				void this.revalidate(cacheKey, identifier, sessionId).catch(() => {});
 			}
+			return cached.value;
+		}
 
-			const existingRequest = this.inflight.get(cacheKey);
-			if (existingRequest) {
-				return existingRequest;
-			}
+		const existingRequest = this.inflight.get(cacheKey);
+		if (existingRequest) {
+			return existingRequest;
 		}
 
 		return this.revalidate(cacheKey, identifier, sessionId);
