@@ -10,6 +10,8 @@ out/
 # turbo
 .turbo/
 
+.claude/
+
 # cloudflare / wrangler
 .wrangler/
 

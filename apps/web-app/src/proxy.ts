@@ -3,11 +3,22 @@ import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
 	"/",
-	"/about(.*)",
 	"/docs(.*)",
-	"/pricing(.*)",
-	"/blog(.*)",
-	"/contact(.*)",
+	"/pricing",
+	"/changelog",
+	"/roadmap",
+	"/status",
+  
+	"/about",
+	"/contact",
+	"/careers",
+  
+  "/privacy",
+  "/terms",
+  "/security",
+  "/cookies",
+  "/dpa",
+  
 	"/sign-in(.*)",
 	"/sso-callback(.*)",
 ]);

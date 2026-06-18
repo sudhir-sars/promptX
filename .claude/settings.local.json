@@ -24,7 +24,8 @@
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
       "WebSearch",
       "Bash(pnpm publish *)",
-      "Read(//c/c/Users/spartian/xevos/promptX/apps/web-app/src/components/**)"
+      "Read(//c/c/Users/spartian/xevos/promptX/apps/web-app/src/components/**)",
+      "Bash(grep -v -E '\\\\.\\(png|jpg|jpeg|ico|svg|woff|woff2|ttf\\)$')"
     ]
   }
 }
