@@ -49,14 +49,16 @@ await promptx.getPrompt("checkout-assistant", { promptVersion: "experiment-a" })
 
 ## Error handling
 
+All SDK failures throw `PromptxError`. For a non-2xx edge response it also
+carries the HTTP `status` (e.g. 401, 404, 503).
+
 ```ts
-import { PromptFetchError } from "@xevos-ai/promptx";
+import { PromptxError } from "@xevos-ai/promptx";
 
 try {
 	const prompt = await promptx.getPrompt("checkout-assistant");
 } catch (error) {
-	if (error instanceof PromptFetchError) {
-		// Non-2xx response from the edge (e.g. 401, 404, 503).
+	if (error instanceof PromptxError) {
 		console.error(error.status, error.message);
 	}
 }

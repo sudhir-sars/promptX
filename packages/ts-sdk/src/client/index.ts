@@ -12,7 +12,7 @@ import {
 	SESSION_HEADER,
 } from "@promptx/shared";
 import { MemoryCache } from "../cache";
-import { PromptFetchError, PromptxError } from "../zlib/error";
+import { PromptxError } from "../zlib/error";
 import type { GetPromptOptions, Prompt } from "../ztypes";
 
 declare const process: { env: Record<string, string | undefined> };
@@ -125,21 +125,30 @@ class PromptXClient {
 
 	private async parseResponse(response: Response, identifier: string): Promise<Prompt> {
 		if (!response.ok) {
-			throw new PromptFetchError(response.status, response.statusText, identifier);
+			throw new PromptxError(
+				`[promptx] Failed to fetch prompt "${identifier}": ${response.status} ${response.statusText}`,
+				response.status,
+			);
 		}
 
 		let body: unknown;
 		try {
 			body = await response.json();
 		} catch {
-			throw new PromptFetchError(response.status, "Invalid JSON body", identifier);
+			throw new PromptxError(
+				`[promptx] Failed to fetch prompt "${identifier}": ${response.status} Invalid JSON body`,
+				response.status,
+			);
 		}
 
 		// Verify the response against the shared contract by parsing it back.
 		const parsed = promptResponseSchema.safeParse(body);
 
 		if (!parsed.success) {
-			throw new PromptFetchError(response.status, "Invalid Response body", identifier);
+			throw new PromptxError(
+				`[promptx] Failed to fetch prompt "${identifier}": ${response.status} Invalid Response body`,
+				response.status,
+			);
 		}
 
 		return parsed.data;

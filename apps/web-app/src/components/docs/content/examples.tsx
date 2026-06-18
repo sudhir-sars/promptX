@@ -105,20 +105,14 @@ const prompt = await promptx.getPrompt("support-agent");`}
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`import { promptx } from "@xevos-ai/promptx";
-import { PromptFetchError, PromptxError } from "@xevos-ai/promptx";
+					code={`import { promptx, PromptxError } from "@xevos-ai/promptx";
 
 try {
   const prompt = await promptx.getPrompt("checkout-assistant");
 } catch (error) {
-  if (error instanceof PromptFetchError) {
-    // HTTP-level failure from the edge (404, 401, 503, ...)
-    console.error("PromptX fetch failed:", error.status, error.message);
-    return FALLBACK_PROMPT;
-  }
-
   if (error instanceof PromptxError) {
-    console.error("PromptX error:", error.message);
+    // HTTP-level failures from the edge expose error.status (404, 401, 503, ...)
+    console.error("PromptX error:", error.status, error.message);
     return FALLBACK_PROMPT;
   }
 
@@ -127,8 +121,8 @@ try {
 				/>
 				<Callout type="warning" className="mt-4">
 					Always have a fallback prompt for critical code paths. Network issues and API outages happen — your
-					application should degrade gracefully. <InlineCode>PromptFetchError</InlineCode> extends{" "}
-					<InlineCode>PromptxError</InlineCode> and carries the HTTP <InlineCode>status</InlineCode>.
+					application should degrade gracefully. <InlineCode>PromptxError</InlineCode> carries the HTTP{" "}
+					<InlineCode>status</InlineCode> when the failure came from a non-2xx edge response.
 				</Callout>
 			</DocSection>
 		</DocPageWrapper>

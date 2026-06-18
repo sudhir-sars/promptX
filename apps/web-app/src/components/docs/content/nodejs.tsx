@@ -128,19 +128,19 @@ const completion =
 
 			<DocSection id="error-handling" label="Errors" title="Error handling">
 				<DocParagraph>
-					The SDK throws <InlineCode>PromptFetchError</InlineCode> when the edge returns a non-2xx response. It extends{" "}
-					<InlineCode>PromptxError</InlineCode> and exposes the HTTP <InlineCode>status</InlineCode>.
+					The SDK throws <InlineCode>PromptxError</InlineCode> on any failure. When the edge returns a non-2xx
+					response it also carries the HTTP <InlineCode>status</InlineCode>.
 				</DocParagraph>
 
 				<CodeBlock
 					className="mt-5"
 					language="typescript"
-					code={`import { PromptFetchError } from "@xevos-ai/promptx";
+					code={`import { PromptxError } from "@xevos-ai/promptx";
 
 try {
   const prompt = await promptx.getPrompt("chat-assistant");
 } catch (error) {
-  if (error instanceof PromptFetchError) {
+  if (error instanceof PromptxError) {
     console.error(error.status, error.message);
     return FALLBACK_PROMPT;
   }

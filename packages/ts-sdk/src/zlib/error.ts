@@ -1,16 +1,10 @@
 export class PromptxError extends Error {
-	constructor(message: string) {
+	/** HTTP status code, present when the error came from a non-2xx edge response. */
+	readonly status?: number;
+
+	constructor(message: string, status?: number) {
 		super(message);
 		this.name = "PromptxError";
-	}
-}
-
-export class PromptFetchError extends PromptxError {
-	readonly status: number;
-
-	constructor(status: number, statusText: string, slug: string) {
-		super(`[promptx] Failed to fetch prompt "${slug}": ${status} ${statusText}`);
-		this.name = "PromptFetchError";
 		this.status = status;
 	}
 }
