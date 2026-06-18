@@ -5,7 +5,7 @@ export default defineConfig({
 	format: ["cjs", "esm"],
 	dts: true,
 	clean: true,
-	sourcemap: true,
+	sourcemap: false,
 	// @promptx/shared is a workspace package; bundle it into the published
 	// output so external consumers don't need to resolve it.
 	noExternal: ["@promptx/shared"],

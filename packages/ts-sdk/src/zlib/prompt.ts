@@ -31,7 +31,10 @@ export function isPrompt(value: unknown): value is Prompt {
 
 	if (routing["strategy"] === "default") return true;
 
-	if (routing["strategy"] === "user_sticky" && typeof routing["identifier"] === "string") {
+	if (
+		routing["strategy"] === "user_sticky" &&
+		typeof routing["identifier"] === "string"
+	) {
 		return true;
 	}
 

@@ -1,6 +1,6 @@
 {
-	"name": "@xevos/promptx",
-	"version": "0.1.0",
+	"name": "@xevos-ai/promptx",
+	"version": "0.1.1",
 	"description": "Fetch prompts from the Xevos edge",
 	"type": "module",
 	"main": "./dist/index.cjs",
