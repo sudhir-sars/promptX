@@ -151,13 +151,16 @@ export default function InvitePage() {
 						</div>
 					) : (
 						<div className="flex justify-center gap-3">
-							<Button variant="outline" disabled={action !== null} onClick={handleDecline}>
-								{action === "decline" && <Loader2 className="mr-2 size-4 animate-spin" />}
+							<Button
+								variant="outline"
+								loading={action === "decline"}
+								disabled={action !== null}
+								onClick={handleDecline}
+							>
 								Decline
 							</Button>
 
-							<Button disabled={action !== null} onClick={handleAccept}>
-								{action === "accept" && <Loader2 className="mr-2 size-4 animate-spin" />}
+							<Button loading={action === "accept"} disabled={action !== null} onClick={handleAccept}>
 								Accept invitation
 							</Button>
 						</div>

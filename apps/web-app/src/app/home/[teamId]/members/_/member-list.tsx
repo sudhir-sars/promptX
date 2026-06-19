@@ -126,7 +126,7 @@ export function MembersList({ membership }: MembersListProps) {
 								)}
 
 								{canManage && !isSelf && member.role !== "owner" && (
-									<Button size="sm" variant="destructive" disabled={isPending} onClick={() => handleRemove(member)}>
+									<Button size="sm" variant="destructive" loading={isPending} onClick={() => handleRemove(member)}>
 										Remove
 									</Button>
 								)}

@@ -92,7 +92,8 @@ export function PromptDialog() {
 					<Button
 						variant="outline"
 						onClick={handleSubmit}
-						disabled={!name.trim() || isSubmitting}
+						loading={isSubmitting}
+						disabled={!name.trim()}
 						className="rounded-full"
 					>
 						{isSubmitting

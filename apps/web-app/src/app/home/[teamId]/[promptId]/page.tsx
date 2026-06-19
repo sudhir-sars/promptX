@@ -21,6 +21,7 @@ export default function StudioPage() {
 	const { activeDeployments } = useDeployments();
 
 	const [compareVersion, setCompareVersion] = useState<typeof version | null>(null);
+	const [isCreatingVersion, setIsCreatingVersion] = useState(false);
 
 	const openDeployDialog = useDeployDialogStore((state) => state.open);
 
@@ -86,14 +87,18 @@ export default function StudioPage() {
 						{isDraft && (
 							<Button
 								variant="outline"
-								onClick={() =>
-									createVersion({
-										content: version.content,
-									})
-								}
+								loading={isCreatingVersion}
+								onClick={async () => {
+									setIsCreatingVersion(true);
+									try {
+										await createVersion({ content: version.content });
+									} finally {
+										setIsCreatingVersion(false);
+									}
+								}}
 							>
-								<VersionsIcon className="size-4" />
-								Version
+								{!isCreatingVersion && <VersionsIcon className="size-4" />}
+								{isCreatingVersion ? "Creating..." : "Version"}
 							</Button>
 						)}
 

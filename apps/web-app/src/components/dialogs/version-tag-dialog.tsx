@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,9 @@ export function VersionTagDialog() {
 	const { isOpen, version, close } = useVersionTagDialogStore();
 
 	const [value, setValue] = useState("");
-	const [isSaving, setIsSaving] = useState(false);
+	const [pending, setPending] = useState<"save" | "remove" | null>(null);
+
+	const isSaving = pending !== null;
 
 	const existingTag = version?.tag && version.tag !== "draft" ? version.tag : "";
 
@@ -38,11 +39,11 @@ export function VersionTagDialog() {
 		}
 
 		try {
-			setIsSaving(true);
+			setPending("save");
 			await setTag(version._id, trimmed);
 			close();
 		} finally {
-			setIsSaving(false);
+			setPending(null);
 		}
 	};
 
@@ -52,11 +53,11 @@ export function VersionTagDialog() {
 		}
 
 		try {
-			setIsSaving(true);
+			setPending("remove");
 			await setTag(version._id, "");
 			close();
 		} finally {
-			setIsSaving(false);
+			setPending(null);
 		}
 	};
 
@@ -90,6 +91,7 @@ export function VersionTagDialog() {
 							<Button
 								variant="outline"
 								onClick={handleRemove}
+								loading={pending === "remove"}
 								disabled={isSaving}
 								className="rounded-full text-destructive"
 							>
@@ -97,15 +99,13 @@ export function VersionTagDialog() {
 							</Button>
 						)}
 
-						<Button onClick={handleSave} disabled={isSaving || !trimmed || unchanged} className="ml-auto rounded-full">
-							{isSaving ? (
-								<>
-									<Loader2 className="mr-2 size-4 animate-spin" />
-									Saving...
-								</>
-							) : (
-								"Save Tag"
-							)}
+						<Button
+							onClick={handleSave}
+							loading={pending === "save"}
+							disabled={isSaving || !trimmed || unchanged}
+							className="ml-auto rounded-full"
+						>
+							{pending === "save" ? "Saving..." : "Save Tag"}
 						</Button>
 					</div>
 				</div>

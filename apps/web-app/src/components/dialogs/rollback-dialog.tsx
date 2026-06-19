@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -107,15 +106,13 @@ export function RollbackDialog() {
 						<p className="text-xs text-amber-600">There is no active deployment to replace.</p>
 					)}
 
-					<Button onClick={handleRollback} disabled={!selectedId || isRollingBack || !hasActive} className="w-full">
-						{isRollingBack ? (
-							<>
-								<Loader2 className="mr-2 size-4 animate-spin" />
-								Rolling back...
-							</>
-						) : (
-							"Confirm Rollback"
-						)}
+					<Button
+						onClick={handleRollback}
+						loading={isRollingBack}
+						disabled={!selectedId || !hasActive}
+						className="w-full"
+					>
+						{isRollingBack ? "Rolling back..." : "Confirm Rollback"}
 					</Button>
 				</div>
 			</DialogContent>

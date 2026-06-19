@@ -2,6 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import Image from "next/image";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { LogoutIcon } from "@/components/ui/icons";
@@ -10,6 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 export function UserDropdown() {
 	const { user } = useUser();
 	const { signOut } = useClerk();
+
+	const [isSigningOut, setIsSigningOut] = useState(false);
 
 	if (!user) return null;
 
@@ -43,11 +46,15 @@ export function UserDropdown() {
 				<div className="p-1">
 					<Button
 						variant="destructive"
-						onClick={() => signOut({ redirectUrl: "/" })}
+						loading={isSigningOut}
+						onClick={() => {
+							setIsSigningOut(true);
+							void signOut({ redirectUrl: "/" });
+						}}
 						className="h-9 w-full justify-start rounded-full border border-transparent text-[12.5px] font-normal text-destructive hover:border-destructive/20 hover:bg-destructive/15 hover:text-destructive"
 					>
-						<LogoutIcon className="size-4" />
-						<span>Logout</span>
+						{!isSigningOut && <LogoutIcon className="size-4" />}
+						<span>{isSigningOut ? "Logging out..." : "Logout"}</span>
 					</Button>
 				</div>
 			</PopoverContent>

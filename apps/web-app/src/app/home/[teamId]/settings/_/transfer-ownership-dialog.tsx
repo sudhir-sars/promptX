@@ -130,7 +130,7 @@ export function TransferOwnershipDialog({ open, onOpenChange }: TransferOwnershi
 						)}
 					</div>
 
-					<Button onClick={handleTransfer} disabled={!selected || isSubmitting} className="w-full">
+					<Button onClick={handleTransfer} loading={isSubmitting} disabled={!selected} className="w-full">
 						{isSubmitting ? "Transferring..." : "Transfer Ownership"}
 					</Button>
 				</div>

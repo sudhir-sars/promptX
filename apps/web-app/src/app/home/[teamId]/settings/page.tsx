@@ -19,6 +19,7 @@ export default function SettingsPage() {
 	const { openEdit } = useTeamDialogStore();
 
 	const [transferOpen, setTransferOpen] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	if (!membership || !team) {
 		return <ErrorState message="Unable to load team details. The team may not exist or you may not have access." />;
@@ -41,9 +42,14 @@ export default function SettingsPage() {
 			return;
 		}
 
-		await deleteTeam({
-			teamId: team._id,
-		});
+		setIsDeleting(true);
+		try {
+			await deleteTeam({
+				teamId: team._id,
+			});
+		} finally {
+			setIsDeleting(false);
+		}
 	};
 
 	return (
@@ -124,9 +130,9 @@ export default function SettingsPage() {
 								</p>
 							</div>
 
-							<Button variant="destructive" onClick={handleDelete}>
-								<TrashIcon />
-								Delete Team
+							<Button variant="destructive" loading={isDeleting} onClick={handleDelete}>
+								{!isDeleting && <TrashIcon />}
+								{isDeleting ? "Deleting..." : "Delete Team"}
 							</Button>
 						</div>
 					</div>

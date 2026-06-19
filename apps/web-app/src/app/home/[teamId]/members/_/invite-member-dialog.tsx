@@ -95,7 +95,8 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
 					<Button
 						variant="outline"
 						onClick={handleSubmit}
-						disabled={!normalizedEmail || isSubmitting || isSelfInvite}
+						loading={isSubmitting}
+						disabled={!normalizedEmail || isSelfInvite}
 						className="rounded-full text-[12.5px]"
 					>
 						{isSubmitting ? "Sending..." : "Send invitation"}

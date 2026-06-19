@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -241,17 +240,11 @@ export function DeployDialog() {
 
 					<Button
 						onClick={handleDeploy}
-						disabled={isDeploying || (abTesting && totalTraffic !== 100)}
+						loading={isDeploying}
+						disabled={abTesting && totalTraffic !== 100}
 						className="w-full"
 					>
-						{isDeploying ? (
-							<>
-								<Loader2 className="mr-2 size-4 animate-spin" />
-								Deploying...
-							</>
-						) : (
-							`Deploy v${version.sequence}`
-						)}
+						{isDeploying ? "Deploying..." : `Deploy v${version.sequence}`}
 					</Button>
 				</div>
 			</DialogContent>

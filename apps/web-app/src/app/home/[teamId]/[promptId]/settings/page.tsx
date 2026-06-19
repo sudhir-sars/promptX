@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EditIcon, TrashIcon } from "@/components/ui/icons";
@@ -10,6 +11,8 @@ import { usePromptDialogStore } from "@/stores/prompt-dialog-store";
 export default function SettingsPage() {
 	const { prompt, deletePrompt } = usePrompts();
 	const router = useRouter();
+
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const openEdit = usePromptDialogStore((state) => state.openEdit);
 
@@ -79,17 +82,23 @@ export default function SettingsPage() {
 
 						<Button
 							variant="destructive"
+							loading={isDeleting}
 							onClick={async () => {
 								const confirmed = confirm("Delete this prompt permanently?");
 
 								if (!confirmed) return;
 
-								router.push(`/home/${prompt.teamId}`);
-								await deletePrompt(prompt._id);
+								setIsDeleting(true);
+								try {
+									await deletePrompt(prompt._id);
+									router.push(`/home/${prompt.teamId}`);
+								} finally {
+									setIsDeleting(false);
+								}
 							}}
 						>
-							<TrashIcon />
-							Delete Prompt
+							{!isDeleting && <TrashIcon />}
+							{isDeleting ? "Deleting..." : "Delete Prompt"}
 						</Button>
 					</div>
 				</section>

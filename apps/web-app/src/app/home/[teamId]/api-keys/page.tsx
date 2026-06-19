@@ -2,7 +2,6 @@
 
 import type { FunctionReturnType } from "convex/server";
 
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -79,8 +78,7 @@ export default function ApiKeysPage() {
 						</p>
 					</div>
 
-					<Button variant="outline" onClick={handleCreate} disabled={isCreating}>
-						{isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+					<Button variant="outline" onClick={handleCreate} loading={isCreating}>
 						{isCreating ? "Generating..." : "Generate Key"}
 					</Button>
 				</div>
@@ -116,10 +114,9 @@ export default function ApiKeysPage() {
 												<Button
 													size="sm"
 													variant="destructive"
-													disabled={isRevoking}
+													loading={isRevoking}
 													onClick={() => handleRevoke(key._id)}
 												>
-													{isRevoking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 													{isRevoking ? "Revoking..." : "Revoke"}
 												</Button>
 											</div>
@@ -187,8 +184,7 @@ export default function ApiKeysPage() {
 							</button>
 
 							<div className="flex justify-end gap-2">
-								<Button variant="outline" onClick={handleCopy} disabled={isCopying}>
-									{isCopying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+								<Button variant="outline" onClick={handleCopy} loading={isCopying}>
 									{isCopying ? "Copying..." : "Copy Key"}
 								</Button>
 							</div>

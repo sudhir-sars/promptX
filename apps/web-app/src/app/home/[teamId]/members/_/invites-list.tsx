@@ -99,7 +99,7 @@ export function InvitesList({ membership }: InvitesListProps) {
 									Copy Link
 								</Button>
 
-								<Button size="sm" variant="destructive" disabled={isPending} onClick={() => handleCancel(invite)}>
+								<Button size="sm" variant="destructive" loading={isPending} onClick={() => handleCancel(invite)}>
 									Cancel
 								</Button>
 							</div>

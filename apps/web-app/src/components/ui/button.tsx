@@ -1,7 +1,7 @@
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 import { Slot } from "radix-ui";
 import type * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
@@ -45,21 +45,39 @@ function Button({
 	variant = "default",
 	size = "default",
 	asChild = false,
+	loading = false,
+	disabled,
+	children,
 	...props
 }: React.ComponentProps<"button"> &
 	VariantProps<typeof buttonVariants> & {
 		asChild?: boolean;
+		loading?: boolean;
 	}) {
 	const Comp = asChild ? Slot.Root : "button";
+
+	// `asChild` forwards a single child to a Slot, so we can't inject a spinner there.
+	const showSpinner = loading && !asChild;
 
 	return (
 		<Comp
 			data-slot="button"
 			data-variant={variant}
 			data-size={size}
+			data-loading={showSpinner || undefined}
+			disabled={disabled || showSpinner}
 			className={cn(buttonVariants({ variant, size, className }))}
 			{...props}
-		/>
+		>
+			{showSpinner ? (
+				<>
+					<Loader2 className="animate-spin" />
+					{children}
+				</>
+			) : (
+				children
+			)}
+		</Comp>
 	);
 }
 
