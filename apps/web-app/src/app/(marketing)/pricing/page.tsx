@@ -5,36 +5,29 @@ const tiers = [
 	{
 		name: "Free",
 		price: "$0",
-		period: "forever",
+		period: "/ forever",
 		description: "For individual developers exploring prompt management.",
-		features: [
-			"1 project",
-			"50 prompts",
-			"Unlimited versions",
-			"Community support",
-			"1 environment",
-			"1,000 API calls / month",
-		],
+		features: ["1 team", "10 prompts", "100 versions", "Community support", "1,000 API calls / month"],
 		cta: "Get Started",
 		ctaVariant: "outline" as const,
 		highlight: false,
 	},
 	{
 		name: "Pro",
-		price: "$49",
+		price: "$99",
 		period: "/ month",
 		description: "For teams shipping AI products to production.",
 		features: [
-			"Unlimited projects",
+			"Unlimited teams",
 			"Unlimited prompts",
 			"Unlimited versions",
 			"Priority support",
-			"5 environments",
 			"100,000 API calls / month",
 			"Traffic splitting",
-			"Team collaboration (5 seats)",
+			"Team collaboration / 10 seats",
 			"Audit logs",
 			"Observability dashboard",
+			"AI powered insights",
 		],
 		cta: "Start Free Trial",
 		ctaVariant: "default" as const,
@@ -49,7 +42,6 @@ const tiers = [
 			"Everything in Pro",
 			"Unlimited seats",
 			"Unlimited API calls",
-			"Unlimited environments",
 			"SSO / SAML",
 			"Custom SLA (99.99%)",
 			"Dedicated support engineer",
@@ -120,13 +112,12 @@ export default function PricingPage() {
 					Free for individuals. Scaled pricing for teams. No hidden fees, no surprise overages.
 				</p>
 
-				{/* Tier cards */}
 				<div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-3">
 					{tiers.map((tier) => (
 						<div
 							key={tier.name}
-							className={`flex flex-col rounded-[24px] border p-7 ${
-								tier.highlight ? "border-foreground/[0.15] bg-foreground/[0.02]" : "border-foreground/[0.06]"
+							className={`flex flex-col rounded-[24px] border p-7 backdrop-blur-md ${
+								tier.highlight ? "border-foreground/[0.15] " : "border-foreground/[0.06]"
 							}`}
 						>
 							<p className="text-[10px] font-medium uppercase tracking-[0.15em] text-foreground/50">{tier.name}</p>

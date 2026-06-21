@@ -127,4 +127,22 @@ export default defineSchema({
 	})
 		.index("by_owner", ["ownerId"])
 		.index("by_team", ["teamId"]),
+
+	// Proof-of-consent log. Records each cookie/analytics decision a visitor
+	// makes (server-side, tamper-evident) to satisfy GDPR accountability.
+	consentRecords: defineTable({
+		visitorId: v.string(),
+		userId: v.optional(v.id("users")),
+
+		necessary: v.boolean(),
+		analytics: v.boolean(),
+
+		policyVersion: v.number(),
+		source: v.string(),
+		userAgent: v.optional(v.string()),
+
+		createdAt: v.number(),
+	})
+		.index("by_visitor", ["visitorId"])
+		.index("by_user", ["userId"]),
 });

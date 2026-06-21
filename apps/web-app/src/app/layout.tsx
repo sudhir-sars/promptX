@@ -5,6 +5,10 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { PostHogProvider } from "@/providers/posthog-provider";
+import { CookieBanner } from "@/components/consent/cookie-banner";
+import { PreferenceCenter } from "@/components/consent/preference-center";
+import { Dialogs } from "./dialog";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -51,10 +55,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 			<body className="min-h-full flex flex-col bg-background relative">
 				<ClerkProvider>
 					<div className="relative z-10 flex flex-col min-h-screen">
-						<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-							<Toaster />
-							{children}
-						</ThemeProvider>
+						<PostHogProvider>
+							<Dialogs />
+							<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+								<Toaster />
+								{children}
+							</ThemeProvider>
+						</PostHogProvider>
 					</div>
 				</ClerkProvider>
 			</body>

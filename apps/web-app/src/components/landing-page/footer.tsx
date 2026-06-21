@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useConsentStore } from "@/stores/consent-store";
 
 const footerSections = [
 	{
@@ -32,6 +35,8 @@ const footerSections = [
 ];
 
 export function LandingFooter() {
+	const openPreferences = useConsentStore((s) => s.openPreferences);
+
 	return (
 		<footer className="px-8 pb-10 pt-6 md:px-16 lg:px-24">
 			<div className="mx-auto max-w-5xl">
@@ -63,6 +68,15 @@ export function LandingFooter() {
 											{link.label}
 										</Link>
 									))}
+									{section.title === "Legal" && (
+											<button
+												type="button"
+												onClick={openPreferences}
+												className="text-left text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+											>
+												Cookie preferences
+											</button>
+										)}
 								</nav>
 							</div>
 						))}
