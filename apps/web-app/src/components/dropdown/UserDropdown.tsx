@@ -5,18 +5,21 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { LogoutIcon } from "@/components/ui/icons";
+import { LogoutIcon, SettingsIcon } from "@/components/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AccountSettingsDialog } from "./AccountSettingsDialog";
 
 export function UserDropdown() {
 	const { user } = useUser();
 	const { signOut } = useClerk();
 
 	const [isSigningOut, setIsSigningOut] = useState(false);
+	const [accountOpen, setAccountOpen] = useState(false);
 
 	if (!user) return null;
 
 	return (
+		<>
 		<Popover>
 			<PopoverTrigger asChild>
 				<Button
@@ -43,7 +46,16 @@ export function UserDropdown() {
 				sideOffset={12}
 				className="z-10 w-64 overflow-hidden rounded-[22px] bg-background/80 p-0 backdrop-blur-2xl"
 			>
-				<div className="p-1">
+				<div className="space-y-1 p-1">
+					<Button
+						variant="outline"
+						onClick={() => setAccountOpen(true)}
+						className="h-9 w-full justify-start rounded-full border border-transparent text-[12.5px] font-normal"
+					>
+						<SettingsIcon className="size-4" />
+						<span>Account Settings</span>
+					</Button>
+
 					<Button
 						variant="destructive"
 						loading={isSigningOut}
@@ -59,5 +71,8 @@ export function UserDropdown() {
 				</div>
 			</PopoverContent>
 		</Popover>
+
+		<AccountSettingsDialog open={accountOpen} onOpenChange={setAccountOpen} />
+		</>
 	);
 }
