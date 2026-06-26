@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 /**
- * Wire contract for the platform-management REST API (`/v0/manage`).
+ * Wire contract for the platform REST API (`/v0/rest`).
  *
  * Single source of truth, mirroring `edge-http.ts`: the Convex HTTP routes
  * `parse` request bodies with these schemas before touching the database, and the
- * SDK's management client imports the inferred types so a drifting shape is a
- * compile error. Resource ids travel as opaque strings on the wire (the server
- * casts them to Convex ids at the boundary).
+ * SDK's REST client imports the inferred types so a drifting shape is a compile
+ * error. Resource ids travel as opaque strings on the wire (the server casts them
+ * to Convex ids at the boundary).
  */
 
 /** One variant of a deployment: a version and the share of traffic it receives. */

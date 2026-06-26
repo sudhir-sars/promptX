@@ -53,7 +53,7 @@ console.log(prompt.content);
 
 **Programmatic management.** Everything the dashboard does — author prompts, cut
 versions, deploy with traffic splits, roll back — is also available headlessly
-over the `/v0/manage` REST API and the SDK's `PromptRest` client, so agents
+over the `/v0/rest` REST API and the SDK's `PromptRest` client, so agents
 and scripts can drive PromptX with the same `xe_live_...` API keys:
 
 ```ts

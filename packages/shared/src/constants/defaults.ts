@@ -11,10 +11,10 @@ export const DEFAULT_BASE_URL = "https://edge.promptx.xevos.dev";
 export const DEFAULT_DEV_BASE_URL = "https://befitting-cat-123.convex.site";
 
 /**
- * Base URL for the platform-management REST API (`/v0/manage`). Hosted by the
- * Convex HTTP router, so it shares the dev endpoint's `.convex.site` origin.
+ * Base URL for the platform REST API (`/v0/rest`). Hosted by the Convex HTTP
+ * router, so it shares the dev endpoint's `.convex.site` origin.
  */
-export const DEFAULT_MANAGEMENT_BASE_URL = DEFAULT_DEV_BASE_URL;
+export const DEFAULT_REST_BASE_URL = DEFAULT_DEV_BASE_URL;
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 

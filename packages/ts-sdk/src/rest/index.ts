@@ -2,12 +2,12 @@ import {
 	type CreateDeploymentBody,
 	type CreatePromptBody,
 	type CreateVersionBody,
-	DEFAULT_MANAGEMENT_BASE_URL,
 	DEFAULT_REQUEST_TIMEOUT_MS,
+	DEFAULT_REST_BASE_URL,
 	type ManagedDeployment,
 	type ManagedPrompt,
 	type ManagedVersion,
-	MANAGEMENT_BASE_PATH,
+	REST_BASE_PATH,
 	type UpdatePromptBody,
 	type UpdateVersionBody,
 } from "@promptx/shared";
@@ -26,7 +26,7 @@ export interface RestClientOptions {
  * Programmatic control plane: everything the PromptX dashboard can do — author
  * prompts, cut versions, deploy with traffic splits, roll back — exposed as plain
  * methods so agents and scripts can manage prompts headlessly. Backed by the
- * `/v0/manage` REST API and authenticated with a team API key.
+ * `/v0/rest` REST API and authenticated with a team API key.
  *
  * ```ts
  * import { PromptRest } from "@xevos-ai/promptx";
@@ -42,7 +42,7 @@ export class PromptRest {
 	private cachedApiKey: string | null;
 
 	constructor(options: RestClientOptions = {}) {
-		this.baseUrl = options.baseUrl ?? DEFAULT_MANAGEMENT_BASE_URL;
+		this.baseUrl = options.baseUrl ?? DEFAULT_REST_BASE_URL;
 		this.cachedApiKey = options.apiKey ?? null;
 	}
 
@@ -61,7 +61,7 @@ export class PromptRest {
 	}
 
 	private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-		const response = await fetch(`${this.baseUrl}${MANAGEMENT_BASE_PATH}${path}`, {
+		const response = await fetch(`${this.baseUrl}${REST_BASE_PATH}${path}`, {
 			method,
 			headers: {
 				Authorization: `Bearer ${this.apiKey()}`,

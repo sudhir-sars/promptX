@@ -2,35 +2,38 @@ import {
 	createDeploymentSchema,
 	createPromptSchema,
 	createVersionSchema,
-	MANAGEMENT_BASE_PATH,
+	REST_BASE_PATH,
 	updatePromptSchema,
 	updateVersionSchema,
 } from "@promptx/shared";
+import type { HonoWithConvex } from "convex-helpers/server/hono";
 import { ConvexError } from "convex/values";
+import { type Context, Hono } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { type ActionCtx, httpAction } from "../_generated/server";
+import type { ActionCtx } from "../_generated/server";
 import { verifyApiKey } from "../lib/apiKeys";
 import { pushToCFKV } from "../lib/deployments";
-import type { AppError } from "../lib/errors";
+import { type AppError, badRequest } from "../lib/errors";
 import type { CreateDeployConfig } from "../types";
-import { type HttpRouter, jsonResponse } from "./lib";
 
 /**
- * PromptX platform REST API. Mirrors every write the dashboard can make
- * (author prompts, cut versions, deploy, roll back) so agents and the SDK can
- * drive PromptX headlessly. Authenticated per request with a team API key
- * (`Authorization: Bearer xe_live_...`) and scoped to that key's team; all
- * business logic lives in the team-scoped `internal.rest.*` functions.
+ * PromptX platform REST API (`/v0/rest`), built on Hono (via
+ * `convex-helpers/server/hono`) so routes are declared with real path params —
+ * `/prompts/:promptId/versions/:versionId` — rather than hand-parsed segments.
  *
- * Routing: Convex's HTTP router has no path params, so each method is registered
- * once on the `/v0/manage/` prefix and dispatched here by path segment.
+ * Every request is authenticated with a team API key (`Authorization: Bearer
+ * xe_live_...`) and scoped to that key's team; all business logic lives in the
+ * team-scoped `internal.rest.*` functions. Prompts are first-class; versions and
+ * deployments are sub-resources nested under their prompt (a deployment hangs off
+ * the prompt, not a single version — it splits traffic across many versions).
  */
 
-const PREFIX = `${MANAGEMENT_BASE_PATH}/`;
+type RestEnv = { teamId: Id<"teams"> };
 
-const STATUS: Record<AppError["code"], number> = {
+const STATUS: Record<AppError["code"], ContentfulStatusCode> = {
 	UNAUTHORIZED: 401,
 	FORBIDDEN: 403,
 	NOT_FOUND: 404,
@@ -38,132 +41,132 @@ const STATUS: Record<AppError["code"], number> = {
 	INTERNAL_ERROR: 500,
 };
 
-/** Parse + validate a JSON body, throwing a BAD_REQUEST that maps to HTTP 400. */
-async function readBody<T extends z.ZodTypeAny>(request: Request, schema: T): Promise<z.infer<T>> {
-	let raw: unknown;
-	try {
-		raw = await request.json();
-	} catch {
-		throw new ConvexError<AppError>({ code: "BAD_REQUEST", message: "Invalid JSON body" });
-	}
-
+/** Parse + validate a JSON body, throwing a BAD_REQUEST (mapped to HTTP 400). */
+async function readBody<T extends z.ZodTypeAny>(c: Context, schema: T): Promise<z.infer<T>> {
+	const raw = await c.req.json().catch(() => badRequest("Invalid JSON body"));
 	const parsed = schema.safeParse(raw);
-	if (!parsed.success) {
-		throw new ConvexError<AppError>({
-			code: "BAD_REQUEST",
-			message: parsed.error.issues[0]?.message ?? "Invalid body",
-		});
-	}
-
+	if (!parsed.success) badRequest(parsed.error.issues[0]?.message ?? "Invalid body");
 	return parsed.data;
 }
 
-/**
- * Resolve the request to a handler result (a JSON-serializable value). Prompts
- * are first-class; versions and deployments are sub-resources nested under their
- * prompt, so every path begins `/prompts/:promptId/...`. (Deployments hang off the
- * prompt, not a single version — a deployment splits traffic across many versions.)
- */
-async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
-	const url = new URL(request.url);
-	const segments = url.pathname.slice(PREFIX.length).split("/").filter(Boolean);
-	const method = request.method;
+export function registerRestRoutes(parent: HonoWithConvex<ActionCtx>) {
+	const rest: HonoWithConvex<ActionCtx, RestEnv> = new Hono();
 
-	const [root, promptIdRaw, child, childIdRaw, action] = segments;
-	const promptId = promptIdRaw as Id<"prompts">;
-
-	if (root !== "prompts") {
-		throw new ConvexError<AppError>({ code: "NOT_FOUND", message: `No route for ${method} ${url.pathname}` });
-	}
-
-	// /prompts
-	if (!promptIdRaw) {
-		if (method === "GET") return ctx.runQuery(internal.rest.listPrompts, { teamId });
-		if (method === "POST") {
-			const { name } = await readBody(request, createPromptSchema);
-			return ctx.runMutation(internal.rest.createPrompt, { teamId, name });
-		}
-	}
-
-	// /prompts/:promptId
-	else if (!child) {
-		if (method === "GET") return ctx.runQuery(internal.rest.getPrompt, { teamId, promptId });
-		if (method === "PATCH") {
-			const { name } = await readBody(request, updatePromptSchema);
-			return ctx.runMutation(internal.rest.updatePrompt, { teamId, promptId, name });
-		}
-		if (method === "DELETE") {
-			await ctx.runMutation(internal.rest.deletePrompt, { teamId, promptId });
-			return { deleted: true };
-		}
-	}
-
-	// /prompts/:promptId/versions[/:versionId]
-	else if (child === "versions") {
-		const versionId = childIdRaw as Id<"versions">;
-		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.rest.listVersions, { teamId, promptId });
-		if (!childIdRaw && method === "POST") {
-			const body = await readBody(request, createVersionSchema);
-			return ctx.runMutation(internal.rest.createVersion, { teamId, promptId, ...body });
-		}
-		if (childIdRaw && method === "GET") {
-			return ctx.runQuery(internal.rest.getVersion, { teamId, promptId, versionId });
-		}
-		if (childIdRaw && method === "PATCH") {
-			const body = await readBody(request, updateVersionSchema);
-			return ctx.runMutation(internal.rest.updateVersion, { teamId, promptId, versionId, ...body });
-		}
-	}
-
-	// /prompts/:promptId/deployments[/:deploymentId[/rollback]]
-	else if (child === "deployments") {
-		const deploymentId = childIdRaw as Id<"deployments">;
-		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.rest.listDeployments, { teamId, promptId });
-		if (!childIdRaw && method === "POST") {
-			const { config } = await readBody(request, createDeploymentSchema);
-			const { deployment, kvPayload } = await ctx.runMutation(internal.rest.deployPromptVersion, {
-				teamId,
-				promptId,
-				config: config as CreateDeployConfig,
-			});
-			await pushToCFKV(deployment.teamId, kvPayload);
-			return deployment;
-		}
-		if (childIdRaw && !action && method === "GET") {
-			return ctx.runQuery(internal.rest.getDeployment, { teamId, promptId, deploymentId });
-		}
-		if (childIdRaw && action === "rollback" && method === "POST") {
-			const { newDeployment, kvPayload } = await ctx.runMutation(internal.rest.rollbackDeployment, {
-				teamId,
-				promptId,
-				deploymentId,
-			});
-			await pushToCFKV(newDeployment.teamId, kvPayload);
-			return newDeployment;
-		}
-	}
-
-	throw new ConvexError<AppError>({ code: "NOT_FOUND", message: `No route for ${method} ${url.pathname}` });
-}
-
-export function registerRestRoutes(http: HttpRouter) {
-	const handler = httpAction(async (ctx, request) => {
-		const apiKey = await verifyApiKey(ctx, request.headers.get("Authorization"));
-		if (!apiKey) return jsonResponse({ error: "Invalid API key" }, 401);
-
-		try {
-			return jsonResponse(await dispatch(ctx, request, apiKey.teamId), 200);
-		} catch (error) {
-			if (error instanceof ConvexError && typeof error.data?.code === "string") {
-				const { code, message } = error.data as AppError;
-				return jsonResponse({ error: message }, STATUS[code] ?? 500);
-			}
-			console.error(error);
-			return jsonResponse({ error: "Internal server error" }, 500);
-		}
+	// Authenticate every request and pin it to the API key's team.
+	rest.use("*", async (c, next) => {
+		const apiKey = await verifyApiKey(c.env, c.req.header("Authorization") ?? null);
+		if (!apiKey) return c.json({ error: "Invalid API key" }, 401);
+		c.set("teamId", apiKey.teamId);
+		await next();
 	});
 
-	for (const method of ["GET", "POST", "PATCH", "DELETE"] as const) {
-		http.route({ pathPrefix: PREFIX, method, handler });
-	}
+	rest.onError((err, c) => {
+		if (err instanceof ConvexError && typeof err.data?.code === "string") {
+			const { code, message } = err.data as AppError;
+			return c.json({ error: message }, STATUS[code] ?? 500);
+		}
+		console.error(err);
+		return c.json({ error: "Internal server error" }, 500);
+	});
+
+	const promptId = (c: Context) => c.req.param("promptId") as Id<"prompts">;
+	const versionId = (c: Context) => c.req.param("versionId") as Id<"versions">;
+	const deploymentId = (c: Context) => c.req.param("deploymentId") as Id<"deployments">;
+
+	// --- Prompts ---
+	rest.get("/prompts", async (c) =>
+		c.json(await c.env.runQuery(internal.rest.listPrompts, { teamId: c.get("teamId") })),
+	);
+	rest.post("/prompts", async (c) =>
+		c.json(
+			await c.env.runMutation(internal.rest.createPrompt, {
+				teamId: c.get("teamId"),
+				...(await readBody(c, createPromptSchema)),
+			}),
+		),
+	);
+	rest.get("/prompts/:promptId", async (c) =>
+		c.json(await c.env.runQuery(internal.rest.getPrompt, { teamId: c.get("teamId"), promptId: promptId(c) })),
+	);
+	rest.patch("/prompts/:promptId", async (c) =>
+		c.json(
+			await c.env.runMutation(internal.rest.updatePrompt, {
+				teamId: c.get("teamId"),
+				promptId: promptId(c),
+				...(await readBody(c, updatePromptSchema)),
+			}),
+		),
+	);
+	rest.delete("/prompts/:promptId", async (c) => {
+		await c.env.runMutation(internal.rest.deletePrompt, { teamId: c.get("teamId"), promptId: promptId(c) });
+		return c.json({ deleted: true });
+	});
+
+	// --- Versions (sub-resource of a prompt) ---
+	rest.get("/prompts/:promptId/versions", async (c) =>
+		c.json(await c.env.runQuery(internal.rest.listVersions, { teamId: c.get("teamId"), promptId: promptId(c) })),
+	);
+	rest.post("/prompts/:promptId/versions", async (c) =>
+		c.json(
+			await c.env.runMutation(internal.rest.createVersion, {
+				teamId: c.get("teamId"),
+				promptId: promptId(c),
+				...(await readBody(c, createVersionSchema)),
+			}),
+		),
+	);
+	rest.get("/prompts/:promptId/versions/:versionId", async (c) =>
+		c.json(
+			await c.env.runQuery(internal.rest.getVersion, {
+				teamId: c.get("teamId"),
+				promptId: promptId(c),
+				versionId: versionId(c),
+			}),
+		),
+	);
+	rest.patch("/prompts/:promptId/versions/:versionId", async (c) =>
+		c.json(
+			await c.env.runMutation(internal.rest.updateVersion, {
+				teamId: c.get("teamId"),
+				promptId: promptId(c),
+				versionId: versionId(c),
+				...(await readBody(c, updateVersionSchema)),
+			}),
+		),
+	);
+
+	// --- Deployments (prompt-scoped; a deployment splits traffic across versions) ---
+	rest.get("/prompts/:promptId/deployments", async (c) =>
+		c.json(await c.env.runQuery(internal.rest.listDeployments, { teamId: c.get("teamId"), promptId: promptId(c) })),
+	);
+	rest.post("/prompts/:promptId/deployments", async (c) => {
+		const { config } = await readBody(c, createDeploymentSchema);
+		const { deployment, kvPayload } = await c.env.runMutation(internal.rest.deployPromptVersion, {
+			teamId: c.get("teamId"),
+			promptId: promptId(c),
+			config: config as CreateDeployConfig,
+		});
+		await pushToCFKV(deployment.teamId, kvPayload);
+		return c.json(deployment);
+	});
+	rest.get("/prompts/:promptId/deployments/:deploymentId", async (c) =>
+		c.json(
+			await c.env.runQuery(internal.rest.getDeployment, {
+				teamId: c.get("teamId"),
+				promptId: promptId(c),
+				deploymentId: deploymentId(c),
+			}),
+		),
+	);
+	rest.post("/prompts/:promptId/deployments/:deploymentId/rollback", async (c) => {
+		const { newDeployment, kvPayload } = await c.env.runMutation(internal.rest.rollbackDeployment, {
+			teamId: c.get("teamId"),
+			promptId: promptId(c),
+			deploymentId: deploymentId(c),
+		});
+		await pushToCFKV(newDeployment.teamId, kvPayload);
+		return c.json(newDeployment);
+	});
+
+	parent.route(REST_BASE_PATH, rest);
 }
