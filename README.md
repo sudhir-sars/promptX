@@ -53,13 +53,13 @@ console.log(prompt.content);
 
 **Programmatic management.** Everything the dashboard does — author prompts, cut
 versions, deploy with traffic splits, roll back — is also available headlessly
-over the `/v0/manage` REST API and the SDK's `PromptManagement` client, so agents
+over the `/v0/manage` REST API and the SDK's `PromptRest` client, so agents
 and scripts can drive PromptX with the same `xe_live_...` API keys:
 
 ```ts
-import { PromptManagement } from "@xevos-ai/promptx";
+import { PromptRest } from "@xevos-ai/promptx";
 
-const px = new PromptManagement(); // reads PROMPTX_API_KEY
+const px = new PromptRest(); // reads PROMPTX_API_KEY
 const prompt = await px.createPrompt({ name: "Checkout Assistant" });
 const version = await px.createVersion(prompt._id, { content: "You are…" });
 await px.deploy(prompt._id, {
@@ -90,7 +90,7 @@ apps/web-app
 │   ├── prompts.ts              Prompt queries and mutations
 │   ├── versions.ts             Version history, drafts, and tags
 │   ├── deployments.ts          Deployment and traffic-split logic
-│   ├── management.ts           Team-scoped (API-key) backend for the REST API
+│   ├── rest.ts                 Team-scoped (API-key) backend for the REST API
 │   ├── apiKeys.ts              API key issuance and revocation
 │   ├── activities.ts           Audit log
 │   ├── users.ts                User records
@@ -98,7 +98,7 @@ apps/web-app
 │   ├── teams/                  Team, member, and invite functions
 │   ├── actions/                Side-effecting actions (apiKey, deployments, email)
 │   ├── emails/                 Transactional email templates
-│   ├── http/                   HTTP endpoints (Clerk webhooks, prompt resolution, management REST API)
+│   ├── http/                   HTTP endpoints (Clerk webhooks, prompt resolution, platform REST API)
 │   ├── lib/                    Backend helpers
 │   └── types/                  Shared backend types
 │

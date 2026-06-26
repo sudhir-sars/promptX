@@ -18,11 +18,11 @@ import type { CreateDeployConfig } from "../types";
 import { type HttpRouter, jsonResponse } from "./lib";
 
 /**
- * Platform-management REST API. Mirrors every write the dashboard can make
+ * PromptX platform REST API. Mirrors every write the dashboard can make
  * (author prompts, cut versions, deploy, roll back) so agents and the SDK can
  * drive PromptX headlessly. Authenticated per request with a team API key
  * (`Authorization: Bearer xe_live_...`) and scoped to that key's team; all
- * business logic lives in the team-scoped `internal.management.*` functions.
+ * business logic lives in the team-scoped `internal.rest.*` functions.
  *
  * Routing: Convex's HTTP router has no path params, so each method is registered
  * once on the `/v0/manage/` prefix and dispatched here by path segment.
@@ -78,22 +78,22 @@ async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 
 	// /prompts
 	if (!promptIdRaw) {
-		if (method === "GET") return ctx.runQuery(internal.management.listPrompts, { teamId });
+		if (method === "GET") return ctx.runQuery(internal.rest.listPrompts, { teamId });
 		if (method === "POST") {
 			const { name } = await readBody(request, createPromptSchema);
-			return ctx.runMutation(internal.management.createPrompt, { teamId, name });
+			return ctx.runMutation(internal.rest.createPrompt, { teamId, name });
 		}
 	}
 
 	// /prompts/:promptId
 	else if (!child) {
-		if (method === "GET") return ctx.runQuery(internal.management.getPrompt, { teamId, promptId });
+		if (method === "GET") return ctx.runQuery(internal.rest.getPrompt, { teamId, promptId });
 		if (method === "PATCH") {
 			const { name } = await readBody(request, updatePromptSchema);
-			return ctx.runMutation(internal.management.updatePrompt, { teamId, promptId, name });
+			return ctx.runMutation(internal.rest.updatePrompt, { teamId, promptId, name });
 		}
 		if (method === "DELETE") {
-			await ctx.runMutation(internal.management.deletePrompt, { teamId, promptId });
+			await ctx.runMutation(internal.rest.deletePrompt, { teamId, promptId });
 			return { deleted: true };
 		}
 	}
@@ -101,27 +101,27 @@ async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 	// /prompts/:promptId/versions[/:versionId]
 	else if (child === "versions") {
 		const versionId = childIdRaw as Id<"versions">;
-		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.management.listVersions, { teamId, promptId });
+		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.rest.listVersions, { teamId, promptId });
 		if (!childIdRaw && method === "POST") {
 			const body = await readBody(request, createVersionSchema);
-			return ctx.runMutation(internal.management.createVersion, { teamId, promptId, ...body });
+			return ctx.runMutation(internal.rest.createVersion, { teamId, promptId, ...body });
 		}
 		if (childIdRaw && method === "GET") {
-			return ctx.runQuery(internal.management.getVersion, { teamId, promptId, versionId });
+			return ctx.runQuery(internal.rest.getVersion, { teamId, promptId, versionId });
 		}
 		if (childIdRaw && method === "PATCH") {
 			const body = await readBody(request, updateVersionSchema);
-			return ctx.runMutation(internal.management.updateVersion, { teamId, promptId, versionId, ...body });
+			return ctx.runMutation(internal.rest.updateVersion, { teamId, promptId, versionId, ...body });
 		}
 	}
 
 	// /prompts/:promptId/deployments[/:deploymentId[/rollback]]
 	else if (child === "deployments") {
 		const deploymentId = childIdRaw as Id<"deployments">;
-		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.management.listDeployments, { teamId, promptId });
+		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.rest.listDeployments, { teamId, promptId });
 		if (!childIdRaw && method === "POST") {
 			const { config } = await readBody(request, createDeploymentSchema);
-			const { deployment, kvPayload } = await ctx.runMutation(internal.management.deployPromptVersion, {
+			const { deployment, kvPayload } = await ctx.runMutation(internal.rest.deployPromptVersion, {
 				teamId,
 				promptId,
 				config: config as CreateDeployConfig,
@@ -130,10 +130,10 @@ async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 			return deployment;
 		}
 		if (childIdRaw && !action && method === "GET") {
-			return ctx.runQuery(internal.management.getDeployment, { teamId, promptId, deploymentId });
+			return ctx.runQuery(internal.rest.getDeployment, { teamId, promptId, deploymentId });
 		}
 		if (childIdRaw && action === "rollback" && method === "POST") {
-			const { newDeployment, kvPayload } = await ctx.runMutation(internal.management.rollbackDeployment, {
+			const { newDeployment, kvPayload } = await ctx.runMutation(internal.rest.rollbackDeployment, {
 				teamId,
 				promptId,
 				deploymentId,
@@ -146,7 +146,7 @@ async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 	throw new ConvexError<AppError>({ code: "NOT_FOUND", message: `No route for ${method} ${url.pathname}` });
 }
 
-export function registerManagementRoutes(http: HttpRouter) {
+export function registerRestRoutes(http: HttpRouter) {
 	const handler = httpAction(async (ctx, request) => {
 		const apiKey = await verifyApiKey(ctx, request.headers.get("Authorization"));
 		if (!apiKey) return jsonResponse({ error: "Invalid API key" }, 401);

@@ -13,6 +13,6 @@ export {
 	type UpdateVersionBody,
 } from "@promptx/shared";
 export { promptx } from "./client";
-export { type ManagementClientOptions, PromptManagement } from "./management";
+export { PromptRest, type RestClientOptions } from "./rest";
 export { PromptxError } from "./zlib/error";
 export type { DeploymentEnv, GetPromptOptions, Prompt } from "./ztypes";

@@ -15,10 +15,10 @@ import { PromptxError } from "../zlib/error";
 
 declare const process: { env: Record<string, string | undefined> };
 
-export interface ManagementClientOptions {
+export interface RestClientOptions {
 	/** Team API key (`xe_live_...`). Falls back to `PROMPTX_API_KEY`. */
 	apiKey?: string;
-	/** Override the management API origin (defaults to the PromptX backend). */
+	/** Override the REST API origin (defaults to the PromptX backend). */
 	baseUrl?: string;
 }
 
@@ -29,19 +29,19 @@ export interface ManagementClientOptions {
  * `/v0/manage` REST API and authenticated with a team API key.
  *
  * ```ts
- * import { PromptManagement } from "@xevos-ai/promptx";
+ * import { PromptRest } from "@xevos-ai/promptx";
  *
- * const px = new PromptManagement(); // reads PROMPTX_API_KEY
+ * const px = new PromptRest(); // reads PROMPTX_API_KEY
  * const prompt = await px.createPrompt({ name: "Checkout Assistant" });
  * const version = await px.createVersion(prompt._id, { content: "You are…" });
  * await px.deploy(prompt._id, { config: [{ versionId: version._id, traffic: 100, sequence: version.sequence }] });
  * ```
  */
-export class PromptManagement {
+export class PromptRest {
 	private readonly baseUrl: string;
 	private cachedApiKey: string | null;
 
-	constructor(options: ManagementClientOptions = {}) {
+	constructor(options: RestClientOptions = {}) {
 		this.baseUrl = options.baseUrl ?? DEFAULT_MANAGEMENT_BASE_URL;
 		this.cachedApiKey = options.apiKey ?? null;
 	}

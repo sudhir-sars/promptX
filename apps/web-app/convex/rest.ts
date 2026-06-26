@@ -10,7 +10,7 @@ import { type OwnershipCtx, requireTeamDeployment, requireTeamPrompt, requireTea
 import { createDeployConfig, type DeployPromptVersionResult, type RollbackDeploymentResult } from "./types";
 
 /**
- * Team-scoped backend for the platform-management REST API (`convex/http/management.ts`).
+ * Team-scoped backend for the platform REST API (`convex/http/rest.ts`).
  *
  * These mirror the dashboard's prompt/version/deployment operations but are
  * authorized by a team id (resolved from an API key by the HTTP layer) instead of
