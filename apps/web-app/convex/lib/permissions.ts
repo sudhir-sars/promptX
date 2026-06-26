@@ -49,6 +49,47 @@ export async function requireDeploymentAccess(ctx: OwnershipCtx, deploymentId: I
 	return { deployment, membership };
 }
 
+// ---------------------------------------------------------------------------
+// Team-scoped access (API-key / management REST API). The actor is a team API
+// key rather than a signed-in user, so authorization is "does this resource
+// belong to the key's team?" — no `members` lookup, just a team-id match.
+// ---------------------------------------------------------------------------
+
+export async function requireTeamPrompt(ctx: Pick<OwnershipCtx, "db">, promptId: Id<"prompts">, teamId: Id<"teams">) {
+	const prompt = await ctx.db.get(promptId);
+
+	if (!prompt) notFound("Prompt");
+	if (prompt.teamId !== teamId) forbidden();
+
+	return prompt;
+}
+
+export async function requireTeamVersion(
+	ctx: Pick<OwnershipCtx, "db">,
+	versionId: Id<"versions">,
+	teamId: Id<"teams">,
+) {
+	const version = await ctx.db.get(versionId);
+
+	if (!version) notFound("Version");
+	if (version.teamId !== teamId) forbidden();
+
+	return version;
+}
+
+export async function requireTeamDeployment(
+	ctx: Pick<OwnershipCtx, "db">,
+	deploymentId: Id<"deployments">,
+	teamId: Id<"teams">,
+) {
+	const deployment = await ctx.db.get(deploymentId);
+
+	if (!deployment) notFound("Deployment");
+	if (deployment.teamId !== teamId) forbidden();
+
+	return deployment;
+}
+
 export async function requireTeamAdmin(ctx: OwnershipCtx, teamId: Id<"teams">) {
 	const { membership } = await requireTeamMembership(ctx, teamId);
 

@@ -6,7 +6,7 @@ import { invariant } from "./errors";
 import type { OwnershipCtx } from "./permissions";
 
 export async function validateAndPrepareDeploymentConfig(
-	ctx: OwnershipCtx,
+	ctx: Pick<OwnershipCtx, "db">,
 	prompt: Doc<"prompts">,
 	config: CreateDeployConfig,
 ) {
