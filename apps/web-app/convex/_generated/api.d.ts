@@ -24,6 +24,8 @@ import type * as http from "../http.js";
 import type * as http_clerk from "../http/clerk.js";
 import type * as http_lib from "../http/lib.js";
 import type * as http_prompts from "../http/prompts.js";
+import type * as http_rest from "../http/rest.js";
+import type * as rest from "../rest.js";
 import type * as lib_apiKeys from "../lib/apiKeys.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_cascade from "../lib/cascade.js";
@@ -66,6 +68,8 @@ declare const fullApi: ApiFromModules<{
   "http/clerk": typeof http_clerk;
   "http/lib": typeof http_lib;
   "http/prompts": typeof http_prompts;
+  "http/rest": typeof http_rest;
+  rest: typeof rest;
   "lib/apiKeys": typeof lib_apiKeys;
   "lib/auth": typeof lib_auth;
   "lib/cascade": typeof lib_cascade;

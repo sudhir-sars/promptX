@@ -24,6 +24,16 @@ export const DEV_PROMPT_IDENTIFIER_PARAM = "identifier";
  */
 export const DEV_PROMPT_VERSION_PARAM = "promptVersion";
 
+/**
+ * Base path of the Convex-hosted platform REST API, e.g. `/v0/rest`. Served by
+ * the Convex HTTP router (same `.convex.site` host as the dev endpoint). Every
+ * route is authenticated with a team API key in the `Authorization` header and
+ * scoped to that key's team — it lets agents and the SDK do everything the
+ * dashboard does (author prompts, cut versions, deploy, roll back) without a
+ * browser session.
+ */
+export const REST_BASE_PATH = `/${API_VERSION}/rest` as const;
+
 /** Header carrying the sticky-routing session id. */
 export const SESSION_HEADER = "x-promptx-session-id";
 

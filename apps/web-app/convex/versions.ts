@@ -4,6 +4,7 @@ import { internalQuery } from "./_generated/server";
 import { authedMutation, authedQuery } from "./lib/auth";
 import { invariant } from "./lib/errors";
 import { requirePromptAccess, requireVersionAccess } from "./lib/permissions";
+import { assertTagAvailable, cutVersion } from "./lib/versions";
 
 export const createVersion = authedMutation({
 	args: {
@@ -15,39 +16,10 @@ export const createVersion = authedMutation({
 	handler: async (ctx, { promptId, content }) => {
 		const { prompt } = await requirePromptAccess(ctx, promptId);
 
-		const now = Date.now();
-
-		const draft = await ctx.db
-			.query("versions")
-			.withIndex("by_prompt_draft", (q) => q.eq("promptId", promptId).eq("draft", true))
-			.unique();
-
-		invariant(draft, "No draft found");
-
-		await ctx.db.patch(draft._id, {
-			draft: false,
-			content,
-			updatedAt: now,
-		});
-
-		const newDraftId = await ctx.db.insert("versions", {
-			teamId: prompt.teamId,
-			promptId,
-
-			tag: "draft",
-			sequence: draft.sequence + 1,
-			draft: true,
-
-			content,
-			updatedAt: now,
-		});
-
-		const newDraft = await ctx.db.get(newDraftId);
-
-		invariant(newDraft, "Failed to create draft");
+		const { published, newDraft } = await cutVersion(ctx, prompt, content);
 
 		return {
-			versionId: draft._id,
+			versionId: published._id,
 			newDraft,
 		};
 	},
@@ -117,16 +89,7 @@ export const setVersionTag = authedMutation({
 
 		const trimmed = tag?.trim();
 
-		if (trimmed) {
-			invariant(trimmed.toLowerCase() !== "draft", '"draft" is a reserved tag');
-
-			const exstsingTaggedVersion = await ctx.db
-				.query("versions")
-				.withIndex("by_prompt_tag", (q) => q.eq("promptId", version.promptId).eq("tag", trimmed))
-				.unique();
-
-			invariant(!exstsingTaggedVersion, `Tag "${trimmed}" is already used by v${exstsingTaggedVersion?.sequence}`);
-		}
+		if (trimmed) await assertTagAvailable(ctx, version.promptId, trimmed);
 
 		await ctx.db.patch(versionId, {
 			tag: trimmed,
