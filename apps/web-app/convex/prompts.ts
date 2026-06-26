@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import { internalQuery } from "./_generated/server";
 import { authedMutation, authedQuery } from "./lib/auth";
 import { cascadeDeletePrompt } from "./lib/cascade";
-import { createDefaultVersion } from "./lib/defaults";
-import { invariant, notFound } from "./lib/errors";
+import { notFound } from "./lib/errors";
 import { requirePromptAccess } from "./lib/permissions";
+import { createPromptWithDefault } from "./lib/prompts";
 
 export const createPrompt = authedMutation({
 	args: {
@@ -13,20 +13,7 @@ export const createPrompt = authedMutation({
 		name: v.string(),
 	},
 
-	handler: async (ctx, { teamId, name }) => {
-		const promptId = await ctx.db.insert("prompts", {
-			teamId,
-			name,
-			slug: name.toLowerCase().replace(/ /g, "-"),
-		});
-
-		const prompt = await ctx.db.get(promptId);
-		await createDefaultVersion(ctx, teamId, promptId);
-
-		invariant(prompt, "Prompt creation failed");
-
-		return prompt;
-	},
+	handler: (ctx, { teamId, name }) => createPromptWithDefault(ctx, teamId, name),
 });
 
 export const getPrompt = authedQuery({

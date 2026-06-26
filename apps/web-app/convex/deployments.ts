@@ -2,10 +2,10 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 import { authedQuery } from "./lib/auth";
-import { validateAndPrepareDeploymentConfig } from "./lib/deployments";
+import { releaseDeployment, rollbackToDeployment } from "./lib/deployments";
 import { invariant } from "./lib/errors";
 import { requireDeploymentAccess, requirePromptAccess } from "./lib/permissions";
-import { createDeployConfig, type DeployPromptVersionResult, type RollbackDeploymentResult } from "./types";
+import { createDeployConfig } from "./types";
 
 export const listDeployments = authedQuery({
 	args: {
@@ -29,39 +29,9 @@ export const _deployPromptVersionDb = internalMutation({
 		userId: v.id("users"),
 	},
 	handler: async (ctx, { promptId, config, userId }) => {
-		const authedCtx = { ...ctx, userId };
+		const { prompt } = await requirePromptAccess({ ...ctx, userId }, promptId);
 
-		const { prompt } = await requirePromptAccess(authedCtx, promptId);
-
-		const { deploymentConfig, kvPayload } = await validateAndPrepareDeploymentConfig(authedCtx, prompt, config);
-
-		const activeDeployment = await ctx.db
-			.query("deployments")
-			.withIndex("by_prompt_active", (q) => q.eq("promptId", promptId).eq("active", true))
-			.unique();
-
-		if (activeDeployment) {
-			await ctx.db.patch(activeDeployment._id, {
-				active: false,
-			});
-		}
-
-		const deploymentId = await ctx.db.insert("deployments", {
-			teamId: prompt.teamId,
-			promptId,
-			config: deploymentConfig,
-			active: true,
-		});
-
-		const deployment = await ctx.db.get(deploymentId);
-
-		invariant(deployment, "Deployment not found");
-		const result: DeployPromptVersionResult = {
-			deployment,
-			kvPayload,
-		};
-
-		return result;
+		return releaseDeployment(ctx, prompt, config);
 	},
 });
 
@@ -74,41 +44,15 @@ export const _rollbackDeploymentDb = internalMutation({
 	handler: async (ctx, { rollbackTo, userId, currentDeploymentId }) => {
 		const authedCtx = { ...ctx, userId };
 
-		const { deployment: targetDeployment } = await requireDeploymentAccess(authedCtx, rollbackTo);
-		const { deployment: currentDeployment } = await requireDeploymentAccess(authedCtx, currentDeploymentId);
+		const { deployment: target } = await requireDeploymentAccess(authedCtx, rollbackTo);
+		const { deployment: current } = await requireDeploymentAccess(authedCtx, currentDeploymentId);
 
-		invariant(currentDeployment.active, "Current deployment must be active");
+		invariant(current.active, "Current deployment must be active");
+		invariant(current.promptId === target.promptId, "Deployments must belong to same prompt");
 
-		invariant(currentDeployment.promptId === targetDeployment.promptId, "Deployments must belong to same prompt");
-
-		await ctx.db.patch(currentDeployment._id, {
-			active: false,
-		});
-
-		const prompt = await ctx.db.get(targetDeployment.promptId);
-
+		const prompt = await ctx.db.get(target.promptId);
 		invariant(prompt, "Prompt not found");
 
-		const { kvPayload } = await validateAndPrepareDeploymentConfig(authedCtx, prompt, targetDeployment.config);
-
-		const rollbackDeploymentId = await ctx.db.insert("deployments", {
-			teamId: currentDeployment.teamId,
-			promptId: currentDeployment.promptId,
-			config: targetDeployment.config,
-			active: true,
-			rolledBackTo: targetDeployment._id,
-		});
-
-		const newDeployment = await ctx.db.get(rollbackDeploymentId);
-
-		invariant(newDeployment, "Rollback deployment not found");
-
-		const result: RollbackDeploymentResult = {
-			newDeployment,
-			prevDeployment: currentDeployment,
-			kvPayload,
-		};
-
-		return result;
+		return rollbackToDeployment(ctx, prompt, target);
 	},
 });

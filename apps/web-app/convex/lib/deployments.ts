@@ -1,7 +1,8 @@
 import type { KVPromptConfig } from "../../../../packages/shared/src";
 import { promptKvKey } from "../../../../packages/shared/src/utils";
 import type { Doc, Id } from "../_generated/dataModel";
-import type { CreateDeployConfig } from "../types";
+import type { MutationCtx } from "../_generated/server";
+import { type CreateDeployConfig, type DeployPromptVersionResult, type RollbackDeploymentResult } from "../types";
 import { invariant } from "./errors";
 import type { OwnershipCtx } from "./permissions";
 
@@ -79,6 +80,73 @@ export async function validateAndPrepareDeploymentConfig(
 		kvPayload,
 	};
 }
+
+/**
+ * Shared deployment operations, called by both the dashboard (`deployments.ts`,
+ * Clerk auth) and the REST API (`rest.ts`, API-key auth). Authorization happens
+ * in the caller; the returned `kvPayload` must be pushed to the edge by the
+ * caller (`pushToCFKV`), which only an action/HTTP handler can do.
+ */
+
+/** Release a new active deployment for a prompt, retiring the current active one. */
+export async function releaseDeployment(
+	ctx: MutationCtx,
+	prompt: Doc<"prompts">,
+	config: CreateDeployConfig,
+): Promise<DeployPromptVersionResult> {
+	const { deploymentConfig, kvPayload } = await validateAndPrepareDeploymentConfig(ctx, prompt, config);
+
+	const active = await ctx.db
+		.query("deployments")
+		.withIndex("by_prompt_active", (q) => q.eq("promptId", prompt._id).eq("active", true))
+		.unique();
+
+	if (active) await ctx.db.patch(active._id, { active: false });
+
+	const deploymentId = await ctx.db.insert("deployments", {
+		teamId: prompt.teamId,
+		promptId: prompt._id,
+		config: deploymentConfig,
+		active: true,
+	});
+
+	const deployment = await ctx.db.get(deploymentId);
+	invariant(deployment, "Deployment not found");
+
+	return { deployment, kvPayload };
+}
+
+/** Re-release a previous deployment's config as the new active deployment. */
+export async function rollbackToDeployment(
+	ctx: MutationCtx,
+	prompt: Doc<"prompts">,
+	target: Doc<"deployments">,
+): Promise<RollbackDeploymentResult> {
+	const current = await ctx.db
+		.query("deployments")
+		.withIndex("by_prompt_active", (q) => q.eq("promptId", prompt._id).eq("active", true))
+		.unique();
+
+	invariant(current, "No active deployment to roll back from");
+
+	const { kvPayload } = await validateAndPrepareDeploymentConfig(ctx, prompt, target.config);
+
+	await ctx.db.patch(current._id, { active: false });
+
+	const rollbackId = await ctx.db.insert("deployments", {
+		teamId: prompt.teamId,
+		promptId: prompt._id,
+		config: target.config,
+		active: true,
+		rolledBackTo: target._id,
+	});
+
+	const newDeployment = await ctx.db.get(rollbackId);
+	invariant(newDeployment, "Rollback deployment not found");
+
+	return { newDeployment, prevDeployment: current, kvPayload };
+}
+
 function cfKvNamespaceUrl(key: string) {
 	const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"]!;
 	const namespaceId = process.env["PROMPTX_PROMPTS_KV"]!;

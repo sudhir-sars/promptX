@@ -1,37 +1,26 @@
 import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { cascadeDeletePrompt } from "./lib/cascade";
-import { createDefaultVersion } from "./lib/defaults";
-import { validateAndPrepareDeploymentConfig } from "./lib/deployments";
-import { badRequest, invariant, notFound } from "./lib/errors";
+import { releaseDeployment, rollbackToDeployment } from "./lib/deployments";
+import { badRequest, notFound } from "./lib/errors";
 import { type OwnershipCtx, requireTeamDeployment, requireTeamPrompt, requireTeamVersion } from "./lib/permissions";
-import { createDeployConfig, type DeployPromptVersionResult, type RollbackDeploymentResult } from "./types";
+import { createPromptWithDefault } from "./lib/prompts";
+import { assertTagAvailable, cutVersion } from "./lib/versions";
+import { createDeployConfig } from "./types";
 
 /**
  * Team-scoped backend for the platform REST API (`convex/http/rest.ts`).
  *
- * These mirror the dashboard's prompt/version/deployment operations but are
- * authorized by a team id (resolved from an API key by the HTTP layer) instead of
- * a signed-in user, so they're `internal*` and never exposed to the Convex
- * client. Shared logic (`validateAndPrepareDeploymentConfig`, `createDefaultVersion`,
- * `cascadeDeletePrompt`) is reused so the two surfaces can't drift.
+ * These are thin wrappers: they authorize the actor by team id (resolved from an
+ * API key by the HTTP layer, rather than a signed-in user) and then call the same
+ * `lib/` operation cores the dashboard uses (`createPromptWithDefault`,
+ * `cutVersion`, `releaseDeployment`, `rollbackToDeployment`, …), so the two
+ * surfaces can't drift. They're `internal*` and never exposed to the Convex client.
  */
 
 const DEFAULT_LIMIT = 100;
-
-/** Reject a tag that is reserved or already taken by another version of the prompt. */
-async function assertTagFree(ctx: MutationCtx, promptId: Id<"prompts">, tag: string) {
-	invariant(tag.toLowerCase() !== "draft", '"draft" is a reserved tag');
-
-	const existing = await ctx.db
-		.query("versions")
-		.withIndex("by_prompt_tag", (q) => q.eq("promptId", promptId).eq("tag", tag))
-		.unique();
-
-	invariant(!existing, `Tag "${tag}" is already used by v${existing?.sequence}`);
-}
 
 /**
  * Resolve a version that lives under a specific prompt (the REST hierarchy). A
@@ -65,17 +54,7 @@ async function requireDeploymentInPrompt(
 
 export const createPrompt = internalMutation({
 	args: { teamId: v.id("teams"), name: v.string() },
-	handler: async (ctx, { teamId, name }) => {
-		const promptId = await ctx.db.insert("prompts", {
-			teamId,
-			name,
-			slug: name.toLowerCase().replace(/ /g, "-"),
-		});
-
-		await createDefaultVersion(ctx, teamId, promptId);
-
-		return ctx.db.get(promptId);
-	},
+	handler: (ctx, { teamId, name }) => createPromptWithDefault(ctx, teamId, name),
 });
 
 export const listPrompts = internalQuery({
@@ -132,38 +111,9 @@ export const listVersions = internalQuery({
 export const createVersion = internalMutation({
 	args: { teamId: v.id("teams"), promptId: v.id("prompts"), content: v.string(), tag: v.optional(v.string()) },
 	handler: async (ctx, { teamId, promptId, content, tag }) => {
-		await requireTeamPrompt(ctx, promptId, teamId);
-
-		const now = Date.now();
-		const trimmedTag = tag?.trim();
-
-		if (trimmedTag) await assertTagFree(ctx, promptId, trimmedTag);
-
-		const draft = await ctx.db
-			.query("versions")
-			.withIndex("by_prompt_draft", (q) => q.eq("promptId", promptId).eq("draft", true))
-			.unique();
-
-		invariant(draft, "No draft found");
-
-		await ctx.db.patch(draft._id, {
-			draft: false,
-			content,
-			updatedAt: now,
-			...(trimmedTag ? { tag: trimmedTag } : {}),
-		});
-
-		await ctx.db.insert("versions", {
-			teamId,
-			promptId,
-			tag: "draft",
-			sequence: draft.sequence + 1,
-			draft: true,
-			content,
-			updatedAt: now,
-		});
-
-		return ctx.db.get(draft._id);
+		const prompt = await requireTeamPrompt(ctx, promptId, teamId);
+		const { published } = await cutVersion(ctx, prompt, content, tag);
+		return published;
 	},
 });
 
@@ -190,7 +140,7 @@ export const updateVersion = internalMutation({
 
 		if (!version.draft && content !== undefined) badRequest("Only draft versions can change content");
 
-		if (trimmedTag) await assertTagFree(ctx, version.promptId, trimmedTag);
+		if (trimmedTag) await assertTagAvailable(ctx, version.promptId, trimmedTag);
 
 		await ctx.db.patch(versionId, {
 			...(content !== undefined ? { content } : {}),
@@ -226,28 +176,7 @@ export const deployPromptVersion = internalMutation({
 	args: { teamId: v.id("teams"), promptId: v.id("prompts"), config: createDeployConfig },
 	handler: async (ctx, { teamId, promptId, config }) => {
 		const prompt = await requireTeamPrompt(ctx, promptId, teamId);
-
-		const { deploymentConfig, kvPayload } = await validateAndPrepareDeploymentConfig(ctx, prompt, config);
-
-		const active = await ctx.db
-			.query("deployments")
-			.withIndex("by_prompt_active", (q) => q.eq("promptId", promptId).eq("active", true))
-			.unique();
-
-		if (active) await ctx.db.patch(active._id, { active: false });
-
-		const deploymentId = await ctx.db.insert("deployments", {
-			teamId,
-			promptId,
-			config: deploymentConfig,
-			active: true,
-		});
-
-		const deployment = await ctx.db.get(deploymentId);
-		invariant(deployment, "Deployment not found");
-
-		const result: DeployPromptVersionResult = { deployment, kvPayload };
-		return result;
+		return releaseDeployment(ctx, prompt, config);
 	},
 });
 
@@ -260,33 +189,7 @@ export const rollbackDeployment = internalMutation({
 	args: { teamId: v.id("teams"), promptId: v.id("prompts"), deploymentId: v.id("deployments") },
 	handler: async (ctx, { teamId, promptId, deploymentId }) => {
 		const target = await requireDeploymentInPrompt(ctx, promptId, deploymentId, teamId);
-
-		const current = await ctx.db
-			.query("deployments")
-			.withIndex("by_prompt_active", (q) => q.eq("promptId", promptId).eq("active", true))
-			.unique();
-
-		invariant(current, "No active deployment to roll back from");
-
-		const prompt = await ctx.db.get(promptId);
-		invariant(prompt, "Prompt not found");
-
-		const { kvPayload } = await validateAndPrepareDeploymentConfig(ctx, prompt, target.config);
-
-		await ctx.db.patch(current._id, { active: false });
-
-		const rollbackId = await ctx.db.insert("deployments", {
-			teamId,
-			promptId,
-			config: target.config,
-			active: true,
-			rolledBackTo: target._id,
-		});
-
-		const newDeployment = await ctx.db.get(rollbackId);
-		invariant(newDeployment, "Rollback deployment not found");
-
-		const result: RollbackDeploymentResult = { newDeployment, prevDeployment: current, kvPayload };
-		return result;
+		const prompt = await requireTeamPrompt(ctx, promptId, teamId);
+		return rollbackToDeployment(ctx, prompt, target);
 	},
 });
