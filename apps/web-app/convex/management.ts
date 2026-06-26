@@ -5,8 +5,8 @@ import { internalMutation, internalQuery, type MutationCtx } from "./_generated/
 import { cascadeDeletePrompt } from "./lib/cascade";
 import { createDefaultVersion } from "./lib/defaults";
 import { validateAndPrepareDeploymentConfig } from "./lib/deployments";
-import { badRequest, invariant } from "./lib/errors";
-import { requireTeamDeployment, requireTeamPrompt, requireTeamVersion } from "./lib/permissions";
+import { badRequest, invariant, notFound } from "./lib/errors";
+import { type OwnershipCtx, requireTeamDeployment, requireTeamPrompt, requireTeamVersion } from "./lib/permissions";
 import { createDeployConfig, type DeployPromptVersionResult, type RollbackDeploymentResult } from "./types";
 
 /**
@@ -31,6 +31,34 @@ async function assertTagFree(ctx: MutationCtx, promptId: Id<"prompts">, tag: str
 		.unique();
 
 	invariant(!existing, `Tag "${tag}" is already used by v${existing?.sequence}`);
+}
+
+/**
+ * Resolve a version that lives under a specific prompt (the REST hierarchy). A
+ * version of another prompt 404s, so `/prompts/:a/versions/:v` can't reach a
+ * version of prompt `b` even within the same team.
+ */
+async function requireVersionInPrompt(
+	ctx: Pick<OwnershipCtx, "db">,
+	promptId: Id<"prompts">,
+	versionId: Id<"versions">,
+	teamId: Id<"teams">,
+) {
+	const version = await requireTeamVersion(ctx, versionId, teamId);
+	if (version.promptId !== promptId) notFound("Version");
+	return version;
+}
+
+/** Resolve a deployment that lives under a specific prompt (the REST hierarchy). */
+async function requireDeploymentInPrompt(
+	ctx: Pick<OwnershipCtx, "db">,
+	promptId: Id<"prompts">,
+	deploymentId: Id<"deployments">,
+	teamId: Id<"teams">,
+) {
+	const deployment = await requireTeamDeployment(ctx, deploymentId, teamId);
+	if (deployment.promptId !== promptId) notFound("Deployment");
+	return deployment;
 }
 
 // --- Prompts ---------------------------------------------------------------
@@ -139,6 +167,11 @@ export const createVersion = internalMutation({
 	},
 });
 
+export const getVersion = internalQuery({
+	args: { teamId: v.id("teams"), promptId: v.id("prompts"), versionId: v.id("versions") },
+	handler: (ctx, { teamId, promptId, versionId }) => requireVersionInPrompt(ctx, promptId, versionId, teamId),
+});
+
 /**
  * Edit a version. Drafts accept new `content` and/or `tag`; published versions
  * accept only a `tag` change (their content is immutable, as in the dashboard).
@@ -146,12 +179,13 @@ export const createVersion = internalMutation({
 export const updateVersion = internalMutation({
 	args: {
 		teamId: v.id("teams"),
+		promptId: v.id("prompts"),
 		versionId: v.id("versions"),
 		content: v.optional(v.string()),
 		tag: v.optional(v.string()),
 	},
-	handler: async (ctx, { teamId, versionId, content, tag }) => {
-		const version = await requireTeamVersion(ctx, versionId, teamId);
+	handler: async (ctx, { teamId, promptId, versionId, content, tag }) => {
+		const version = await requireVersionInPrompt(ctx, promptId, versionId, teamId);
 		const trimmedTag = tag?.trim();
 
 		if (!version.draft && content !== undefined) badRequest("Only draft versions can change content");
@@ -180,6 +214,11 @@ export const listDeployments = internalQuery({
 			.order("desc")
 			.take(DEFAULT_LIMIT);
 	},
+});
+
+export const getDeployment = internalQuery({
+	args: { teamId: v.id("teams"), promptId: v.id("prompts"), deploymentId: v.id("deployments") },
+	handler: (ctx, { teamId, promptId, deploymentId }) => requireDeploymentInPrompt(ctx, promptId, deploymentId, teamId),
 });
 
 /** Release a deployment for a prompt, retiring whichever deployment was active. */
@@ -214,22 +253,22 @@ export const deployPromptVersion = internalMutation({
 
 /**
  * Roll back to a previous deployment by re-releasing its config as a new active
- * deployment. `rollbackTo` is the deployment to restore; the prompt's current
+ * deployment. `deploymentId` is the deployment to restore; the prompt's current
  * active deployment is resolved server-side and retired.
  */
 export const rollbackDeployment = internalMutation({
-	args: { teamId: v.id("teams"), rollbackTo: v.id("deployments") },
-	handler: async (ctx, { teamId, rollbackTo }) => {
-		const target = await requireTeamDeployment(ctx, rollbackTo, teamId);
+	args: { teamId: v.id("teams"), promptId: v.id("prompts"), deploymentId: v.id("deployments") },
+	handler: async (ctx, { teamId, promptId, deploymentId }) => {
+		const target = await requireDeploymentInPrompt(ctx, promptId, deploymentId, teamId);
 
 		const current = await ctx.db
 			.query("deployments")
-			.withIndex("by_prompt_active", (q) => q.eq("promptId", target.promptId).eq("active", true))
+			.withIndex("by_prompt_active", (q) => q.eq("promptId", promptId).eq("active", true))
 			.unique();
 
 		invariant(current, "No active deployment to roll back from");
 
-		const prompt = await ctx.db.get(target.promptId);
+		const prompt = await ctx.db.get(promptId);
 		invariant(prompt, "Prompt not found");
 
 		const { kvPayload } = await validateAndPrepareDeploymentConfig(ctx, prompt, target.config);
@@ -238,7 +277,7 @@ export const rollbackDeployment = internalMutation({
 
 		const rollbackId = await ctx.db.insert("deployments", {
 			teamId,
-			promptId: target.promptId,
+			promptId,
 			config: target.config,
 			active: true,
 			rolledBackTo: target._id,

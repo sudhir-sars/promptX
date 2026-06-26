@@ -58,14 +58,26 @@ async function readBody<T extends z.ZodTypeAny>(request: Request, schema: T): Pr
 	return parsed.data;
 }
 
-/** Resolve the request to a handler result (a JSON-serializable value). */
+/**
+ * Resolve the request to a handler result (a JSON-serializable value). Prompts
+ * are first-class; versions and deployments are sub-resources nested under their
+ * prompt, so every path begins `/prompts/:promptId/...`. (Deployments hang off the
+ * prompt, not a single version — a deployment splits traffic across many versions.)
+ */
 async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 	const url = new URL(request.url);
-	const [resource, id, sub] = url.pathname.slice(PREFIX.length).split("/").filter(Boolean);
+	const segments = url.pathname.slice(PREFIX.length).split("/").filter(Boolean);
 	const method = request.method;
 
+	const [root, promptIdRaw, child, childIdRaw, action] = segments;
+	const promptId = promptIdRaw as Id<"prompts">;
+
+	if (root !== "prompts") {
+		throw new ConvexError<AppError>({ code: "NOT_FOUND", message: `No route for ${method} ${url.pathname}` });
+	}
+
 	// /prompts
-	if (resource === "prompts" && !id) {
+	if (!promptIdRaw) {
 		if (method === "GET") return ctx.runQuery(internal.management.listPrompts, { teamId });
 		if (method === "POST") {
 			const { name } = await readBody(request, createPromptSchema);
@@ -74,8 +86,7 @@ async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 	}
 
 	// /prompts/:promptId
-	if (resource === "prompts" && id && !sub) {
-		const promptId = id as Id<"prompts">;
+	else if (!child) {
 		if (method === "GET") return ctx.runQuery(internal.management.getPrompt, { teamId, promptId });
 		if (method === "PATCH") {
 			const { name } = await readBody(request, updatePromptSchema);
@@ -87,21 +98,28 @@ async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 		}
 	}
 
-	// /prompts/:promptId/versions
-	if (resource === "prompts" && id && sub === "versions") {
-		const promptId = id as Id<"prompts">;
-		if (method === "GET") return ctx.runQuery(internal.management.listVersions, { teamId, promptId });
-		if (method === "POST") {
+	// /prompts/:promptId/versions[/:versionId]
+	else if (child === "versions") {
+		const versionId = childIdRaw as Id<"versions">;
+		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.management.listVersions, { teamId, promptId });
+		if (!childIdRaw && method === "POST") {
 			const body = await readBody(request, createVersionSchema);
 			return ctx.runMutation(internal.management.createVersion, { teamId, promptId, ...body });
 		}
+		if (childIdRaw && method === "GET") {
+			return ctx.runQuery(internal.management.getVersion, { teamId, promptId, versionId });
+		}
+		if (childIdRaw && method === "PATCH") {
+			const body = await readBody(request, updateVersionSchema);
+			return ctx.runMutation(internal.management.updateVersion, { teamId, promptId, versionId, ...body });
+		}
 	}
 
-	// /prompts/:promptId/deployments
-	if (resource === "prompts" && id && sub === "deployments") {
-		const promptId = id as Id<"prompts">;
-		if (method === "GET") return ctx.runQuery(internal.management.listDeployments, { teamId, promptId });
-		if (method === "POST") {
+	// /prompts/:promptId/deployments[/:deploymentId[/rollback]]
+	else if (child === "deployments") {
+		const deploymentId = childIdRaw as Id<"deployments">;
+		if (!childIdRaw && method === "GET") return ctx.runQuery(internal.management.listDeployments, { teamId, promptId });
+		if (!childIdRaw && method === "POST") {
 			const { config } = await readBody(request, createDeploymentSchema);
 			const { deployment, kvPayload } = await ctx.runMutation(internal.management.deployPromptVersion, {
 				teamId,
@@ -111,22 +129,18 @@ async function dispatch(ctx: ActionCtx, request: Request, teamId: Id<"teams">) {
 			await pushToCFKV(deployment.teamId, kvPayload);
 			return deployment;
 		}
-	}
-
-	// /versions/:versionId
-	if (resource === "versions" && id && !sub && method === "PATCH") {
-		const body = await readBody(request, updateVersionSchema);
-		return ctx.runMutation(internal.management.updateVersion, { teamId, versionId: id as Id<"versions">, ...body });
-	}
-
-	// /deployments/:deploymentId/rollback
-	if (resource === "deployments" && id && sub === "rollback" && method === "POST") {
-		const { newDeployment, kvPayload } = await ctx.runMutation(internal.management.rollbackDeployment, {
-			teamId,
-			rollbackTo: id as Id<"deployments">,
-		});
-		await pushToCFKV(newDeployment.teamId, kvPayload);
-		return newDeployment;
+		if (childIdRaw && !action && method === "GET") {
+			return ctx.runQuery(internal.management.getDeployment, { teamId, promptId, deploymentId });
+		}
+		if (childIdRaw && action === "rollback" && method === "POST") {
+			const { newDeployment, kvPayload } = await ctx.runMutation(internal.management.rollbackDeployment, {
+				teamId,
+				promptId,
+				deploymentId,
+			});
+			await pushToCFKV(newDeployment.teamId, kvPayload);
+			return newDeployment;
+		}
 	}
 
 	throw new ConvexError<AppError>({ code: "NOT_FOUND", message: `No route for ${method} ${url.pathname}` });

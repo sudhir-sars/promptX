@@ -98,26 +98,32 @@ export class PromptManagement {
 		return this.request<{ deleted: true }>("DELETE", `/prompts/${promptId}`);
 	}
 
-	// Versions
+	// Versions (sub-resource of a prompt)
 	createVersion(promptId: string, body: CreateVersionBody) {
 		return this.request<ManagedVersion>("POST", `/prompts/${promptId}/versions`, body);
 	}
 	listVersions(promptId: string) {
 		return this.request<ManagedVersion[]>("GET", `/prompts/${promptId}/versions`);
 	}
-	updateVersion(versionId: string, body: UpdateVersionBody) {
-		return this.request<ManagedVersion>("PATCH", `/versions/${versionId}`, body);
+	getVersion(promptId: string, versionId: string) {
+		return this.request<ManagedVersion>("GET", `/prompts/${promptId}/versions/${versionId}`);
+	}
+	updateVersion(promptId: string, versionId: string, body: UpdateVersionBody) {
+		return this.request<ManagedVersion>("PATCH", `/prompts/${promptId}/versions/${versionId}`, body);
 	}
 
-	// Deployments
+	// Deployments (sub-resource of a prompt; a deployment splits traffic across versions)
 	deploy(promptId: string, body: CreateDeploymentBody) {
 		return this.request<ManagedDeployment>("POST", `/prompts/${promptId}/deployments`, body);
 	}
 	listDeployments(promptId: string) {
 		return this.request<ManagedDeployment[]>("GET", `/prompts/${promptId}/deployments`);
 	}
+	getDeployment(promptId: string, deploymentId: string) {
+		return this.request<ManagedDeployment>("GET", `/prompts/${promptId}/deployments/${deploymentId}`);
+	}
 	/** Re-release `deploymentId`'s config as the new active deployment. */
-	rollback(deploymentId: string) {
-		return this.request<ManagedDeployment>("POST", `/deployments/${deploymentId}/rollback`);
+	rollback(promptId: string, deploymentId: string) {
+		return this.request<ManagedDeployment>("POST", `/prompts/${promptId}/deployments/${deploymentId}/rollback`);
 	}
 }
